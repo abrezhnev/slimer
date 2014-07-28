@@ -1,0 +1,5 @@
+[osp5]
+name=Red Hat Enterprise Linux OpenStack Platform 5.0
+baseurl=http://LPLCLDWA01563.lab.trcn.aexp.com/osp5/
+enabled=1
+gpgcheck=0

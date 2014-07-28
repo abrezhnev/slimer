@@ -1,0 +1,15 @@
+[controller]
+controller[1:3] primary_if=enp3s0f1.63 private_if=enp3s0f1.74 storage_if=enp3s0f1.56
+
+[compute]
+compute[1:2] primary_if=enp7s0.63 private_if=enp6s0 storage_if=enp6s0.56
+
+[osd]
+ceph[1:3]
+
+[osp:children]
+controller
+compute
+
+[local]
+localhost ansible_connection=local

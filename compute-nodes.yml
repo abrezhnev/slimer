@@ -1,0 +1,5 @@
+---
+- hosts: compute
+  roles:
+    - common
+    - openstack-compute

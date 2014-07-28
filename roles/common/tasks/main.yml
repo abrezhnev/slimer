@@ -1,0 +1,39 @@
+---
+- name: enable ssh key-based access
+  authorized_key: user=root key="{{ item }}"
+  with_file: root-id_rsa.pub
+
+- name: set selinux policy and mode
+  selinux: policy=targeted state=permissive
+
+- name: set yum repos
+  copy: dest=/etc/yum.repos.d src={{ item }}
+  with_items: 
+    - rhel-x86_64-server-7.repo
+    - osp5.repo
+  when: ansible_distribution_version == "7.0"
+
+- name: install ntp
+  yum: pkg=ntp state=installed
+  tags: ntp
+
+- name: configure ntp service
+  template: src=ntp.conf.j2 dest=/etc/ntp.conf force=yes
+  notify:
+    - restart ntpd
+  tags: ntp
+
+- name: stop ntpd service to prepare for time synchronization
+  service: name=ntpd state=stopped
+  when: force_ntpdate == "yes"
+  tags: ntp
+
+- name: sync time from {{ ntp }}
+  command: ntpdate {{ ntp | join(" ") }}
+  when: force_ntpdate == "yes"
+  tags: ntp
+
+- name: start ntpd service
+  service: name=ntpd enabled=yes state=started
+  tags: ntp
+

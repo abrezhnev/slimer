@@ -1,0 +1,5 @@
+[RHEL-7-x86_64]
+name=RHEL_7_x86_64_Repo
+baseurl=http://LPLCLDIUAP09.lab.trcn.aexp.com/rhel-7-server-rpms/
+enabled=1
+gpgcheck=0
