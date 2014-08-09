@@ -10,7 +10,6 @@ bind-address={{ private_ipaddr }}
 
 wsrep_provider=/usr/lib64/galera/libgalera_smm.so
 wsrep_cluster_name="{{ wsrep_cluster_name }}"
-wsrep_cluster_address="gcomm://"
 wsrep_slave_threads=1
 wsrep_certify_nonPK=1
 wsrep_max_ws_rows=131072
@@ -23,4 +22,3 @@ wsrep_drupal_282555_workaround=0
 wsrep_causal_reads=0
 wsrep_notify_cmd=
 wsrep_sst_method=rsync
-
