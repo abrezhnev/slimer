@@ -1,0 +1,19 @@
+---
+- name: install memcached
+  yum: pkg=memcached state=present
+  tags: memcached
+
+- name: disable the memcached service
+  service: name=memcached enabled=no
+  tags: memcached
+
+- name: create the memcached resources in pacemaker
+  pcs_resource: command=create name=memcached type=systemd:memcached clone=yes
+  args:
+    options:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: memcached
