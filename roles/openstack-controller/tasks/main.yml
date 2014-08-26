@@ -2,14 +2,4 @@
 
 - include: setfacts.yml
 - include: ceph.yml
-- include: pcs.yml
-- include: haproxy.yml
-- include: memcached.yml
-- include: mysql.yml
-- include: rabbitmq.yml
-#- include: temp_vip_addresses.yml
-- include: keystone.yml
-- include: glance.yml
-- include: cinder.yml
 - include: nova.yml
-- include: horizon.yml

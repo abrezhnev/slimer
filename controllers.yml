@@ -1,5 +1,17 @@
 ---
 - hosts: controller
   roles:
-    - common
-    - openstack-controller
+    - pacemaker
+    - haproxy
+    - memcached
+    - rabbitmq
+    - galera
+    - keystone
+    - glance
+    - cinder
+#    - neutron
+#    - nova
+#    - mongodb
+#    - ceilometer
+#    - heat
+    - horizon
