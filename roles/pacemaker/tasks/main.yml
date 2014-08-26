@@ -1,0 +1,41 @@
+---
+- name: install pacemaker packages
+  yum: pkg={{ item }} state=present
+  with_items:
+    - pacemaker
+    - resource-agents
+    - pcs
+  tags: pcs
+
+- name: set password for the hacluster user
+  user: name=hacluster password={{ pcs_cluster_pass_encoded }} update_password=always
+  tags: pcs
+
+- name: start pcsd
+  service: name=pcsd enabled=yes state=started
+  tags: pcs
+
+- name: set pcs cluster auth
+  command: pcs cluster auth -u hacluster -p {{ pcs_cluster_pass }} {{ controller_node_names | join(' ') }}
+  tags: pcs
+
+- name: start pacemaker cluster
+  command: creates=/etc/corosync/corosync.conf pcs cluster setup --start --name {{ pcs_cluster_name }} {{ controller_node_names | join(' ') }}
+  run_once: true
+  tags: pcs
+
+- name: enable pacemaker service
+  service: name=pacemaker enabled=yes state=started
+  tags: pcs
+
+- name: pause to let pacemaker initialize resources
+  pause: seconds=30
+  tags: pcs
+
+# this should be re-implemented with the pacemaker_stonith module
+- name: create stonith resources
+#  shell: pcs stonith show fence_{{ item.name }} || pcs stonith create fence_{{ item.name }} fence_{{ item.fencing.agent }} params login={{ item.fencing.login }} passwd="{{ item.fencing.passwd }}" action=reboot ipaddr={{ item.fencing.ipaddr }} lanplus="" verbose="" pcmk_host_list={{ item.name }}
+  shell: pcs stonith show fence_{{ item.name }} || pcs stonith create fence_{{ item.name }} fence_{{ item.fencing.agent }} params login={{ item.fencing.login }} passwd='{{ item.fencing.passwd }}' action=reboot ipaddr={{ item.fencing.ipaddr }} port={{ item.fencing.port }} ssl="1" ssl_insecure="1" verbose="" pcmk_host_list={{ item.name }}
+  with_items: controller_nodes
+  run_once: true
+  tags: pcs_fencing
