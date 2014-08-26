@@ -1,0 +1,3 @@
+---
+use_galera: true
+clustercheck_db_user: clustercheck

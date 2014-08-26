@@ -1,0 +1,7 @@
+---
+- name: flush db hosts
+  command: mysqladmin flush-hosts
+
+- name: restart mariadb
+  service: name=mariadb state=restarted
+
