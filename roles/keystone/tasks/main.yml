@@ -1,0 +1,287 @@
+---
+- name: install keystone packages
+  yum: pkg={{ item }} state=present
+  with_items:
+    - openstack-keystone
+    - openstack-utils
+    - openstack-selinux
+  tags: keystone
+
+- name: generate keystone config file
+  template: src=keystone.conf.j2 dest=/etc/keystone/keystone.conf mode=0640 owner=root group=keystone
+  notify: restart keystone
+  tags: keystone
+
+- name: disable the keystone services
+  service: name=openstack-keystone enabled=no
+  tags: keystone
+
+- name: create certs for keystone
+  command: creates=/etc/keystone/ssl/certs/ca.pem /usr/bin/keystone-manage pki_setup --keystone-user keystone --keystone-group keystone
+  run_once: true
+  tags: keystone
+
+- name: fetch keystone signing cert from the first controller
+  fetch: src=/etc/keystone/ssl/certs/signing_cert.pem dest=special/keystone-signing_cert.pem flat=yes
+  run_once: true
+  tags: keystone
+
+- name: fetch keyfile for token signing
+  fetch: src=/etc/keystone/ssl/private/signing_key.pem dest=special/keystone-signing_key.pem flat=yes
+  run_once: true
+  tags: keystone
+
+- name: fetch CA for token signing
+  fetch: src=/etc/keystone/ssl/certs/ca.pem dest=special/keystone-ca.pem flat=yes
+  run_once: true
+  tags: keystone
+
+- name: fetch CA key for token signing
+  fetch: src=/etc/keystone/ssl/private/cakey.pem dest=special/keystone-cakey.pem flat=yes
+  run_once: true
+  tags: keystone
+
+- name: fix keystone certs directory ownership
+  file: path=/etc/keystone/ssl owner=keystone group=keystone state=directory recurse=true
+  tags: keystone
+
+- name: fix keystone certs directory ownership
+  file: path=/etc/keystone/ssl/certs owner=keystone group=keystone state=directory recurse=true
+  tags: keystone
+
+- name: fix keystone certs directory ownership
+  file: path=/etc/keystone/ssl/private owner=keystone group=keystone state=directory recurse=true
+  tags: keystone
+
+- name: fix keystone logs directory ownership
+  file: path=/var/log/keystone owner=keystone group=keystone state=directory recurse=true
+  tags: keystone
+
+- name: distribute keystone signing cert to other controllers
+  copy: src=special/keystone-signing_cert.pem dest=/etc/keystone/ssl/certs/signing_cert.pem mode=0644 owner=keystone group=keystone
+  tags: keystone
+
+- name: distribute keyfile for token signing to other controllers
+  copy: src=special/keystone-signing_key.pem dest=/etc/keystone/ssl/private/signing_key.pem mode=0640 owner=keystone group=keystone
+  tags: keystone
+
+- name: distribute CA for token signing to other controllers
+  copy: src=special/keystone-ca.pem dest=/etc/keystone/ssl/certs/ca.pem mode=0644 owner=keystone group=keystone
+  tags: keystone
+
+- name: distribute CA key for token signing to other controllers
+  copy: src=special/keystone-cakey.pem dest=/etc/keystone/ssl/private/cakey.pem mode=0640 owner=keystone group=keystone
+  tags: keystone
+
+- name: run dbsync for keystone
+  shell: su -s /bin/sh -c '/usr/bin/keystone-manage db_sync' keystone
+  run_once: true
+  tags: keystone
+
+- name: create pacemaker resources for keystone
+  pcs_resource: command=create name=keystone type=systemd:openstack-keystone clone=yes
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: keystone
+
+- name: pause to let pacemaker initialize keystone resources
+  pause: seconds=20
+  tags: keystone
+
+- name: create admin tenant
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} tenant=admin
+  run_once: true
+  tags: keystone
+
+- name: create the admin user
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} user=admin tenant=admin password={{ admin_pass }}
+  run_once: true
+  tags: keystone
+
+- name: create and apply the admin role to the admin user in the admin tenant
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} role=admin user=admin tenant=admin
+  run_once: true
+  tags: keystone
+
+- name: create the services tenant
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} tenant=services tenant_description="Services Tenant"
+  run_once: true
+  tags: keystone
+
+- name: create the glance user
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} user=glance tenant=services password={{ glance_pass }}
+  run_once: true
+  tags: keystone
+
+- name: apply the admin role to the glance user
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} user=glance role=admin tenant=services
+  run_once: true
+  tags: keystone
+
+- name: create the cinder user
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} user=cinder tenant=services password={{ cinder_pass }}
+  run_once: true
+  tags: keystone
+
+- name: apply the admin role to the cinder user
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} user=cinder role=admin tenant=services
+  run_once: true
+  tags: keystone
+
+- name: create the swift user
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} user=swift tenant=services password={{ swift_pass }}
+  run_once: true
+  tags: keystone
+
+- name: apply the admin role to the swift user
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} user=swift role=admin tenant=services
+  run_once: true
+  tags: keystone
+
+- name: create the neutron user
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} user=neutron tenant=services password={{ neutron_pass }}
+  run_once: true
+  tags: keystone
+
+- name: apply the admin role to the neutron user
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} user=neutron role=admin tenant=services
+  run_once: true
+  tags: keystone
+
+- name: create the compute user
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} user=compute tenant=services password={{ nova_pass }}
+  run_once: true
+  tags: keystone
+
+- name: apply the admin role to the compute user
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} user=compute role=admin tenant=services
+  run_once: true
+  tags: keystone
+
+- name: create the heat user
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} user=heat tenant=services password={{ heat_pass }}
+  run_once: true
+  tags: keystone
+
+- name: apply the admin role to the heat user
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} user=heat role=admin tenant=services
+  run_once: true
+  tags: keystone
+
+- name: create the ceilometer user
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} user=ceilometer tenant=services password={{ ceilometer_pass }}
+  run_once: true
+  tags: keystone
+
+- name: apply the admin role to the ceilometer user
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} user=ceilometer role=admin tenant=services
+  run_once: true
+  tags: keystone
+
+- name: apply the ResellerAdmin role to the ceilometer user
+  keystone_user: token={{ keystone_admin_token }} endpoint={{ keystone_adminurl }} user=ceilometer role=ResellerAdmin tenant=services
+  run_once: true
+  tags: keystone
+
+- name: create the keystone service
+  shell: keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} service-get keystone || keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} service-create --name keystone --type identity --description "Keystone Identity Service"
+  run_once: true
+  tags: keystone
+
+- name: create the glance service
+  shell: keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} service-get glance || keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} service-create --name glance --type image --description "Glance Image Service"
+  run_once: true
+  tags: keystone
+
+- name: create the cinder service
+  shell: keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} service-get cinder || keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} service-create --name cinder --type volume --description "Cinder Volume Service"
+  run_once: true
+  tags: keystone
+
+- name: create the swift service
+  shell: keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} service-get swift || keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} service-create --name swift --type object-store --description "Swift Storage Service"
+  run_once: true
+  when: use_swift
+  tags: keystone
+
+- name: create the neutron service
+  shell: keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} service-get neutron || keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} service-create --name neutron --type network --description "OpenStack Networking Service"
+  run_once: true
+  when: use_neutron
+  tags: keystone
+
+- name: create the compute service
+  shell: keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} service-get compute || keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} service-create --name compute --type compute --description "OpenStack Compute Service"
+  run_once: true
+  tags: keystone
+
+- name: create the heat service
+  shell: keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} service-get heat || keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} service-create --name heat --type orchestration --description "OpenStack Orchestration Service"
+  run_once: true
+  when: use_heat
+  tags: keystone
+
+- name: create the heat-cfn service
+  shell: keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} service-get heat-cfn || keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} service-create --name heat-cfn --type cloudformation --description "OpenStack CloudFormation Service"
+  run_once: true
+  when: use_heat
+  tags: keystone
+
+- name: create the ceilometer service
+  shell: keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} service-get ceilometer || keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} service-create --name ceilometer --type metering --description "OpenStack Telemetry Service"
+  run_once: true
+  when: use_ceilometer
+  tags: keystone
+
+- name: create keystone endpoints
+  shell: keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} endpoint-get identity || keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} endpoint-create --service keystone --publicurl "http://{{ keystone_public_vip }}:5000/v2.0" --adminurl "http://{{ keystone_admin_vip }}:35357/v2.0" --internalurl "http://{{ keystone_private_vip }}:5000/v2.0"
+  run_once: true
+  tags: keystone
+
+- name: create glance endpoints
+  shell: keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} endpoint-get image || keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} endpoint-create --service glance --publicurl "http://{{ glance_public_vip }}:9292" --adminurl "http://{{ glance_admin_vip }}:9292" --internalurl "http://{{ glance_private_vip }}:9292"
+  run_once: true
+  tags: keystone
+
+- name: create cinder endpoints
+  shell: keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} endpoint-get volume || keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} endpoint-create --service cinder --publicurl "http://{{ cinder_public_vip }}:8776/v1/\$(tenant_id)s" --adminurl "http://{{ cinder_admin_vip }}:8776/v1/\$(tenant_id)s" --internalurl "http://{{ cinder_private_vip }}:8776/v1/\$(tenant_id)s"
+  run_once: true
+  tags: keystone
+
+- name: create neutron endpoints
+  shell: keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} endpoint-get network || keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} endpoint-create --service neutron --publicurl "http://{{ neutron_public_vip }}:9696" --adminurl "http://{{ neutron_admin_vip }}:9696" --internalurl "http://{{ neutron_private_vip }}:9696"
+  run_once: true
+  when: use_neutron
+  tags: keystone
+
+- name: create compute endpoints
+  shell: keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} endpoint-get compute || keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} endpoint-create --service compute --publicurl "http://{{ nova_public_vip }}:8774/v2/\$(tenant_id)s" --adminurl "http://{{ nova_admin_vip }}:8774/v2/\$(tenant_id)s" --internalurl "http://{{ nova_private_vip }}:8774/v2/\$(tenant_id)s"
+  run_once: true
+  tags: keystone
+
+- name: create heat endpoints
+  shell: keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} endpoint-get orchestration || keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} endpoint-create --service heat --publicurl "http://{{ heat_public_vip }}:8004/v1/%(tenant_id)s" --adminurl "http://{{ heat_admin_vip }}:8004/v1/%(tenant_id)s" --internalurl "http://{{ heat_private_vip }}:8004/v1/%(tenant_id)s"
+  run_once: true
+  when: use_heat
+  tags: keystone
+
+- name: create heat-cfn endpoints
+  shell: keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} endpoint-get cloudformation || keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} endpoint-create --service heat-cfn --publicurl "http://{{ heat_public_vip }}:8000/v1" --adminurl "http://{{ heat_admin_vip }}:8000/v1" --internalurl "http://{{ heat_private_vip }}:8000/v1"
+  run_once: true
+  when: use_heat
+  tags: keystone
+
+- name: create ceilometer endpoints
+  shell: keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} endpoint-get metering || keystone --os-token {{ keystone_admin_token }} --os-endpoint {{ keystone_adminurl }} endpoint-create --service ceilometer --publicurl "http://{{ ceilometer_public_vip }}:8777" --adminurl "http://{{ ceilometer_admin_vip }}:8777" --internalurl "http://{{ ceilometer_private_vip }}:8777"
+  run_once: true
+  when: use_ceilometer
+  tags: keystone
+
+- name: deploy the keystonerc_admin file
+  template: src=keystonerc_admin.j2 dest=/root/keystonerc_admin mode=0750
+  tags: keystone
+
