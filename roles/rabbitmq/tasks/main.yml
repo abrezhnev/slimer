@@ -1,0 +1,77 @@
+---
+- name: install rabbitmq-server package
+  yum: pkg=rabbitmq-server state=present
+  tags: rabbitmq
+
+- name: copy rabbitmq.config file
+  copy: src=rabbitmq.config dest=/etc/rabbitmq/rabbitmq.config mode=0644 owner=root group=root
+  tags: rabbitmq
+
+- name: deploy rabbitmq-env.conf file
+  template: src=rabbitmq-env.conf.j2 dest=/etc/rabbitmq/rabbitmq-env.conf mode=0644 owner=root group=root
+  tags: rabbitmq
+
+- name: generate erlang cookie file on the first controller
+  command: creates=/var/lib/rabbitmq/.erlang.cookie systemctl start rabbitmq-server
+  run_once: true
+  tags: rabbitmq
+
+- name: fetch erlang cookie file from the first controller
+  fetch: src=/var/lib/rabbitmq/.erlang.cookie dest=special/erlang.cookie flat=yes
+  run_once: true
+  tags: rabbitmq
+
+- name: distribute erlang cookie file to other controller nodes
+  copy: src=special/erlang.cookie dest=/var/lib/rabbitmq/.erlang.cookie mode=0400 owner=rabbitmq group=rabbitmq
+  tags: rabbitmq
+
+- name: start rabbitmq servers
+  service: name=rabbitmq-server enabled=no state=started
+  tags: rabbitmq
+
+- name: stop rabbitmq app on other controller nodes
+  shell: creates=/etc/rabbitmq/step.stop_app rabbitmqctl stop_app; touch /etc/rabbitmq/step.stop_app
+  when: inventory_host != groups.controller[0]
+  tags: rabbitmq
+
+- name: join rabbitmq cluster from other controller nodes
+  shell: creates=/etc/rabbitmq/step.join_cluster rabbitmqctl join_cluster rabbit@{{ groups.controller[0] }}; touch /etc/rabbitmq/step.join_cluster
+  when: inventory_host != groups.controller[0]
+  tags: rabbitmq
+
+- name: pause to let rabbitmq nodes join the cluster
+  pause: seconds=5
+  tags: rabbitmq
+
+- name: start rabbitmq app on other controller nodes
+  shell: creates=/etc/rabbitmq/step.start_app rabbitmqctl start_app; touch /etc/rabbitmq/step.start_app
+  tags: rabbitmq
+
+- name: wait for rabbitmq apps to start
+  wait_for: timeout=5
+  tags: rabbitmq
+
+- name: set rabbitmq HA policy
+  rabbitmq_policy: name=HA pattern='^(?!amq\.).*'
+  args:
+    tags:
+      "ha-mode": all
+  tags: rabbitmq
+
+- name: stop rabbitmq servers
+  service: name=rabbitmq-server enabled=no state=stopped
+  tags: rabbitmq
+
+- name: wait for all rabbitmq servers to stop
+  pause: seconds=10
+  tags: rabbitmq
+
+- name: create pacemaker resources for rabbitmq
+  pcs_resource: command=create name=rabbitmq type=systemd:rabbitmq-server clone=yes
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 20s
+  run_once: true
+  tags: rabbitmq

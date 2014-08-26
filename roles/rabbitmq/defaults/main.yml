@@ -1,0 +1,4 @@
+---
+use_rabbit: true
+use_qpid: false
+rabbit_port: 5672
