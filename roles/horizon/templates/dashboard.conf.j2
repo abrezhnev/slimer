@@ -1,0 +1,7 @@
+NameVirtualHost {{ internal_ipaddr }}
+
+<VirtualHost {{ internal_ipaddr }}>
+  DocumentRoot /
+  ServerName {{ horizon_internal_servername }}
+</VirtualHost>
+
