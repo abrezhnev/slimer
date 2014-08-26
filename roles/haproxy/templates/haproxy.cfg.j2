@@ -1,0 +1,267 @@
+global
+    daemon
+defaults
+    mode tcp
+    maxconn 10000
+    timeout connect 2s
+    timeout client 10s
+    timeout server 10s
+
+listen stats :8888
+    mode http
+    stats uri /
+
+frontend vip-db
+    bind {{ lb_db_vip }}:3306
+    timeout client 90s
+    default_backend db-galera
+
+{% if use_galera is defined and use_galera %}
+backend db-galera
+    option httpchk
+    stick-table type ip size 2
+    stick on dst
+    timeout server 90s
+{% for node in controller_nodes %}
+    server {{ node.name }} {{ node.addr_int }}:3306 check inter 1s port 9200
+{% endfor %}
+{% else %}
+backend db-mariadb
+    balance roundrobin
+    timeout server 90s
+{% for node in controller_nodes %}
+    server {{ node.name }} {{ node.addr_int }}:3306 check inter 1s
+{% endfor %}
+{% endif %}
+
+frontend vip-msg
+    bind {{ rabbit_host }}:{{ rabbit_port | default(5672) }}
+    timeout client 900m
+    default_backend msg
+
+backend msg
+    balance roundrobin
+    timeout server 900m
+{% for node in controller_nodes %}
+    server {{ node.name }} {{ node.addr_int }}:{{ rabbit_port | default(5672) }} check inter 1s
+{% endfor %}
+
+frontend vip-keystone-admin
+    bind {{ keystone_admin_vip }}:35357
+    default_backend keystone-admin
+
+backend keystone-admin
+    balance roundrobin
+{% for node in controller_nodes %}
+    server {{ node.name }} {{ node.addr_int }}:35357 check inter 1s
+{% endfor %}
+
+frontend vip-keystone-pub
+    bind {{ keystone_public_vip }}:5000
+    default_backend keystone
+
+{% if keystone_public_vip != keystone_private_vip %}
+frontend vip-keystone-int
+    bind {{ keystone_private_vip }}:5000
+    default_backend keystone
+{% endif %}
+
+backend keystone
+    balance roundrobin
+{% for node in controller_nodes %}
+    server {{ node.name }} {{ node.addr_int }}:5000 check inter 1s
+{% endfor %}
+
+frontend  vip-glance-api-pub
+    bind {{ glance_public_vip }}:9191
+    default_backend glance-api
+
+{% if glance_public_vip != glance_private_vip %}
+frontend  vip-glance-api-int
+    bind {{ glance_private_vip }}:9191
+    default_backend glance-api
+{% endif %}
+
+backend glance-api
+    balance roundrobin
+{% for node in controller_nodes %}
+    server {{ node.name }} {{ node.addr_int }}:9191 check inter 1s
+{% endfor %}
+
+frontend vip-glance-registry-pub
+    bind {{ glance_public_vip }}:9292
+    default_backend glance-registry
+
+{% if glance_public_vip != glance_private_vip %}
+frontend vip-glance-registry-int
+    bind {{ glance_private_vip }}:9292
+    default_backend glance-registry
+{% endif %}
+
+backend glance-registry
+    balance roundrobin
+{% for node in controller_nodes %}
+    server {{ node.name }} {{ node.addr_int }}:9292 check inter 1s
+{% endfor %}
+
+frontend vip-cinder-pub
+    bind {{ cinder_public_vip }}:8776
+    default_backend cinder
+
+{% if cinder_public_vip != cinder_private_vip %}
+frontend vip-cinder-int
+    bind {{ cinder_private_vip }}:8776
+    default_backend cinder
+{% endif %}
+
+backend cinder
+    balance roundrobin
+{% for node in controller_nodes %}
+    server {{ node.name }} {{ node.addr_int }}:8776 check inter 1s
+{% endfor %}
+
+{% if use_neutron is defined and use_neutron %}
+frontend vip-neutron-pub
+    bind {{ neutron_public_vip }}:9696
+    default_backend neutron
+
+{% if neutron_public_vip != neutron_private_vip %}
+frontend vip-neutron-int
+    bind {{ neutron_private_vip }}:9696
+    default_backend neutron
+{% endif %}
+
+backend neutron
+    balance roundrobin
+{% for node in controller_nodes %}
+    server {{ node.name }} {{ node.addr_int }}:9696 check inter 1s
+{% endfor %}
+{% endif %}
+
+frontend vip-nova-vnc-novncproxy-pub
+    bind {{ nova_public_vip }}:6080
+    default_backend nova-vnc-novncproxy
+
+frontend vip-nova-metadata-pub
+    bind {{ nova_public_vip }}:8775
+    default_backend nova-metadata
+
+frontend vip-nova-api-pub
+    bind {{ nova_public_vip }}:8774
+    default_backend nova-api
+
+{% if nova_public_vip != nova_private_vip %}
+frontend vip-nova-vnc-novncproxy-int
+    bind {{ nova_private_vip }}:6080
+    default_backend nova-vnc-novncproxy
+
+frontend vip-nova-metadata-int
+    bind {{ nova_private_vip }}:8775
+    default_backend nova-metadata
+
+frontend vip-nova-api-int
+    bind {{ nova_private_vip }}:8774
+    default_backend nova-api
+{% endif %}
+
+backend nova-vnc-novncproxy
+    balance roundrobin
+{% for node in controller_nodes %}
+    server {{ node.name }} {{ node.addr_int }}:6080 check inter 1s
+{% endfor %}
+
+backend nova-metadata
+    balance roundrobin
+{% for node in controller_nodes %}
+    server {{ node.name }} {{ node.addr_int }}:8775 check inter 1s
+{% endfor %}
+
+backend nova-api
+    balance roundrobin
+{% for node in controller_nodes %}
+    server {{ node.name }} {{ node.addr_int }}:8774 check inter 1s
+{% endfor %}
+
+frontend vip-horizon-pub
+    bind {{ horizon_public_vip }}:80
+    timeout client 180s
+    cookie SERVERID insert indirect nocache
+    default_backend horizon
+
+{% if horizon_public_vip != horizon_private_vip %}
+frontend vip-horizon-int
+    bind {{ horizon_private_vip }}:80
+    timeout client 180s
+    cookie SERVERID insert indirect nocache
+    default_backend horizon
+{% endif %}
+
+backend horizon
+    balance roundrobin
+    timeout server 180s
+{% for node in controller_nodes %}
+    server {{ node.name }} {{ node.addr_int }}:80 check inter 1s cookie {{ node.name }}
+{% endfor %}
+
+frontend vip-heat-cfn-pub
+    bind {{ heat_public_vip }}:8000
+    default_backend heat-cfn
+
+frontend vip-heat-cloudw-pub
+    bind {{ heat_public_vip }}:8003
+    default_backend heat-cloudw
+
+frontend vip-heat-srv-pub
+    bind {{ heat_public_vip }}:8004
+    default_backend heat-srv
+
+{% if heat_public_vip != heat_private_vip %}
+frontend vip-heat-cfn-int
+    bind {{ heat_private_vip }}:8000
+    default_backend heat-cfn
+
+frontend vip-heat-cloudw-int
+    bind {{ heat_private_vip }}:8003
+    default_backend heat-cloudw
+
+frontend vip-heat-srv-int
+    bind {{ heat_private_vip }}:8004
+    default_backend heat-srv
+{% endif %}
+
+backend heat-cfn
+    balance roundrobin
+{% for node in controller_nodes %}
+    server {{ node.name }} {{ node.addr_int }}:8000 check inter 1s
+{% endfor %}
+
+backend heat-cloudw
+    balance roundrobin
+{% for node in controller_nodes %}
+    server {{ node.name }} {{ node.addr_int }}:8003 check inter 1s
+{% endfor %}
+
+backend heat-srv
+    balance roundrobin
+{% for node in controller_nodes %}
+    server {{ node.name }} {{ node.addr_int }}:8004 check inter 1s
+{% endfor %}
+
+frontend vip-ceilometer-pub
+    bind {{ ceilometer_public_vip }}:8777
+    timeout client 90s
+    default_backend ceilometer
+
+{% if ceilometer_public_vip != ceilometer_private_vip %}
+frontend vip-ceilometer-int
+    bind {{ ceilometer_private_vip }}:8777
+    timeout client 90s
+    default_backend ceilometer
+{% endif %}
+
+backend ceilometer
+    balance roundrobin
+    timeout server 90s
+{% for node in controller_nodes %}
+    server {{ node.name }} {{ node.addr_int }}:8777 check inter 1s
+{% endfor %}
