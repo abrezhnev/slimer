@@ -1,0 +1,44 @@
+---
+- name: install nova packages
+  yum: pkg={{ item }} state=present
+  with_items:
+    - openstack-nova-console
+    - openstack-nova-novncproxy
+    - openstack-utils
+    - openstack-nova-api
+    - openstack-nova-conductor
+    - openstack-nova-scheduler
+    - python-cinderclient
+    - python-memcached
+  tags: nova
+
+- name: run dbsync for nova
+  shell: su -s /bin/sh -c '/usr/bin/nova-manage db sync' nova
+  run_once: true
+  tags: nova
+
+- name: disable nova services
+  service: name={{ item }} enabled=no
+  with_items:
+    - openstack-nova-consoleauth
+    - openstack-nova-novncproxy
+    - openstack-nova-api
+    - openstack-nova-scheduler
+    - openstack-nova-conductor
+  tags: nova
+
+- name: create pacemaker resources for nova control services
+  pcs_resource: command=create name=nova-{{ item }} type=systemd:openstack-nova-{{ item }} clone=yes
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  with_items:
+    - consoleauth
+    - novncproxy
+    - api
+    - scheduler
+    - conductor
+  tags: nova
