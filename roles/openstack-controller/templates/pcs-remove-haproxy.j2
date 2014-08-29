@@ -1,8 +1,0 @@
-#! /bin/sh
-
-RESOURCES="vip-db vip-rabbitmq vip-keystone vip-glance vip-cinder vip-nova vip-horizon vip-heat vip-ceilometer haproxy-clone"
-
-for r in $RESOURCES
-do
-  pcs resource show $r && pcs resource delete $r
-done

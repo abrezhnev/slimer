@@ -1,5 +1,0 @@
----
-
-- include: setfacts.yml
-- include: ceph.yml
-- include: nova.yml
