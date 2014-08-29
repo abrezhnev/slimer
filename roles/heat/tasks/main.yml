@@ -1,0 +1,58 @@
+---
+- name: install heat packages
+  yum: pkg={{ item }} state=present
+  with_items:
+    - openstack-heat-common
+    - openstack-heat-api
+    - openstack-heat-api-cfn
+    - openstack-heat-api-cloudwatch
+    - openstack-heat-engine
+    - python-heatclient
+    - python-glanceclient
+    - openstack-utils
+    - openstack-selinux
+  tags: heat
+
+- name: deploy heat config file
+  template: src=heat.conf.j2 dest=/etc/heat/heat.conf mode=0640 owner=root group=heat
+  notify: restart heat
+  tags: heat
+
+- name: run dbsync for heat
+  shell: su -s /bin/sh -c '/usr/bin/heat-manage db_sync' heat
+  run_once: true
+  tags: heat
+
+- name: disable heat services in systemd
+  service: name={{ item }} enabled=no
+  with_items:
+    - openstack-heat-api
+    - openstack-heat-api-cfn
+    - openstack-heat-api-cloudwatch
+    - openstack-heat-engine
+  tags: heat
+
+- name: create pacemaker resources for heat
+  pcs_resource: command=create name={{ item }} type=systemd:openstack-{{ item }} clone=yes
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  with_items:
+    - heat-api
+    - heat-api-cfn
+    - heat-api-cloudwatch
+  tags: heat
+
+- name: create pacemaker resource for heat-engine
+  pcs_resource: command=create name=heat-engine type=systemd:openstack-heat-engine
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: heat
+

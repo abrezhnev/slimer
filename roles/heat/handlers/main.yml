@@ -1,0 +1,8 @@
+---
+- name: restart heat
+  service: name={{ item }} state=restarted
+  with_items:
+    - openstack-heat-api
+    - openstack-heat-api-cfn
+    - openstack-heat-api-cloudwatch
+    - openstack-heat-engine

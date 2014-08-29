@@ -1,0 +1,8 @@
+---
+public_ipaddr: "{{ hostvars[inventory_hostname][ 'ansible_' + primary_if ].ipv4.address }}"
+internal_ipaddr: "{{ hostvars[inventory_hostname][ 'ansible_' + private_if ].ipv4.address }}"
+heat_bind_host: "{{ internal_ipaddr }}"
+heat_metadata_server_url: "http://{{ heat_private_vip }}:8000"
+heat_waitcondition_server_url: "http://{{ heat_private_vip }}:8000/v1/waitcondition"
+heat_watch_server_url: "http://{{ heat_private_vip }}:8003"
+

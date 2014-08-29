@@ -1,0 +1,9 @@
+---
+heat_port: 8004
+heat_cfn_port: 8000
+heat_cloudwatch_port: 8003
+heat_backlog: 4096
+heat_workers: 0
+heat_max_header_line: 16384
+heat_instance_connection_is_secure: 0
+heat_instance_connection_https_validate_certificates: 1
