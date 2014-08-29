@@ -1,6 +1,0 @@
----
-
-- name: set fact about primary ip address
-  set_fact: primary_ipaddr={{ hostvars[inventory_hostname][ "ansible_" + primary_if ].ipv4.address }}
-  tags: setfacts
-

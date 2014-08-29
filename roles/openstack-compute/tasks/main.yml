@@ -1,4 +1,0 @@
----
-
-- include: setfacts.yml
-- include: nova-compute.yml
