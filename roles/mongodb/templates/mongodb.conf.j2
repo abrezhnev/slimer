@@ -1,0 +1,10 @@
+bind_ip = {{ mongodb_bind_host }}
+port = {{ mongodb_port | default(27017) }}
+fork = true
+pidfilepath = /var/run/mongodb/mongodb.pid
+logpath = /var/log/mongodb/mongodb.log
+dbpath =/var/lib/mongodb/data
+journal = true
+logappend=true
+#keyFile=/var/lib/mongodb/secret
+replSet=ceilometer
