@@ -1,0 +1,4 @@
+---
+public_ipaddr: "{{ hostvars[inventory_hostname][ 'ansible_' + primary_if ].ipv4.address }}"
+internal_ipaddr: "{{ hostvars[inventory_hostname][ 'ansible_' + private_if ].ipv4.address }}"
+glance_bind_host: "{{ internal_ipaddr }}"

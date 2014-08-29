@@ -1,0 +1,3 @@
+---
+use_glance: true
+default_store: file

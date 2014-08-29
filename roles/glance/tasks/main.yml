@@ -1,0 +1,51 @@
+---
+- name: install glance packages
+  yum: pkg={{ item }} state=present
+  with_items:
+    - nfs-utils
+    - openstack-glance
+    - openstack-utils
+    - openstack-selinux
+  tags: glance
+
+- name: run db_sync for glance
+  shell: creates=/etc/glance/db.synced su glance -s /bin/sh -c '/usr/bin/glance-manage db_sync'; touch /etc/glance/db.synced
+  run_once: true
+  tags: glance
+
+- name: deploy glance config files
+  template: src={{ item.src }} dest={{ item.dest }} mode=0640 owner=root group=glance
+  with_items:
+    - { src: glance-registry.conf.j2, dest: /etc/glance/glance-registry.conf }
+    - { src: glance-api.conf.j2, dest: /etc/glance/glance-api.conf }
+  notify: restart glance
+  tags: glance
+
+- name: disable glance services in systemd
+  service: name={{ item }} enabled=no
+  with_items:
+    - openstack-glance-registry
+    - openstack-glance-api
+  tags: glance
+
+- name: create pacemaker cloned resources for glance-registry
+  pcs_resource: command=create name=glance-registry type=systemd:openstack-glance-registry clone=yes
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: glance
+
+- name: create pacemaker cloned resources for glance-api
+  pcs_resource: command=create name=glance-api type=systemd:openstack-glance-api clone=yes
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: glance
+
+
