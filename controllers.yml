@@ -9,9 +9,10 @@
     - keystone
     - glance
     - cinder
-#    - neutron
-#    - nova
-#    - mongodb
-#    - ceilometer
-#    - heat
+    - neutron
+    - nova-common
+    - nova-control
+    - heat
     - horizon
+    - mongodb
+    - ceilometer

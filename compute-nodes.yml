@@ -1,5 +1,5 @@
 ---
 - hosts: compute
   roles:
-    - common
-    - openstack-compute
+    - nova-common
+    - nova-compute
