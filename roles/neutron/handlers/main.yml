@@ -1,0 +1,16 @@
+---
+- name: restart neutron server
+  service: name=neutron-server state=restarted
+
+- name: restart neutron metadata agent
+  service: name=neutron-metadata-agent state=restarted
+
+- name: restart neutron dhcp agent
+  service: name=neutron-dhcp-agent state=restarted
+
+- name: restart neutron openvswitch agent
+  service: name=neutron-openvswitch-agent state=restarted
+
+- name: restart neutron l3 agent
+  service: name=neutron-l3-agent state=restarted
+

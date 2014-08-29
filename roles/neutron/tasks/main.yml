@@ -1,0 +1,206 @@
+---
+- name: install neutron packages
+  yum: pkg={{ item }} state=present
+  with_items:
+    - openstack-neutron
+    - openstack-neutron-openvswitch
+    - openstack-neutron-ml2
+    - openstack-utils
+    - openstack-selinux
+    - openvswitch
+  when: use_neutron
+  tags: neutron
+
+- name: install cisco plugin
+  yum: pkg=openstack-neutron-cisco state=present
+  when: use_neutron_cisco
+  tags: neutron
+
+- name: start openvswitch
+  service: name=openvswitch enabled=yes state=started
+  when: use_neutron
+  tags: neutron
+
+- name: get tenant services uuid
+  shell: source /root/keystonerc_admin; keystone tenant-get services | awk '/id/ { print $4 }'
+  register: tenant_services_uuid
+  when: use_neutron
+  tags: neutron
+
+- name: deploy the neutron.conf file
+  template: src=neutron.conf.j2 dest=/etc/neutron/neutron.conf mode=0640 owner=root group=neutron
+  notify: restart neutron server
+  when: use_neutron
+  tags: neutron
+
+- name: deploy the metadata_agent.ini file
+  template: src=metadata_agent.ini.j2 dest=/etc/neutron/metadata_agent.ini mode=0640 owner=root group=neutron
+  notify: restart neutron metadata agent
+  when: use_neutron
+  tags: neutron
+
+- name: deploy the dhcp_agent.ini file
+  template: src=dhcp_agent.ini.j2 dest=/etc/neutron/dhcp_agent.ini mode=0640 owner=root group=neutron
+  notify: restart neutron dhcp agent
+  when: use_neutron
+  tags: neutron
+
+- name: deploy the l3_agent.ini file
+  template: src=l3_agent.ini.j2 dest=/etc/neutron/l3_agent.ini mode=0640 owner=root group=neutron
+  notify: restart neutron l3 agent
+  when: use_neutron
+  tags: neutron
+
+- name: deploy the ml2_conf.ini file
+  template: src=ml2_conf.ini.j2 dest=/etc/neutron/plugins/ml2/ml2_conf.ini mode=0640 owner=root group=neutron
+  notify: restart neutron server
+  when: use_neutron_ml2
+  tags: neutron
+
+- name: deploy the ovs_neutron_plugin.ini file
+  template: src=ovs_neutron_plugin.ini.j2 dest=/etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini mode=0640 owner=root group=neutron
+  notify:
+    - restart neutron openvswitch agent
+    - restart neutron server
+  when: use_neutron
+  tags: neutron
+
+- name: deploy the cisco_plugins.ini file
+  template: src=cisco_plugins.ini.j2 dest=/etc/neutron/plugins/cisco/cisco_plugins.ini mode=0640 owner=root group=neutron
+  notify: restart neutron server
+  when: use_neutron_cisco
+  tags: neutron
+
+- name: link plugin.ini to the ovs plugin config file
+  file: src=/etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini dest=/etc/neutron/plugin.ini state=link
+  when: use_neutron_cisco
+  tags: neutron
+
+- name: link plugin.ini to the ml2 plugin config file
+  file: src=/etc/neutron/plugins/ml2/ml2_conf.ini dest=/etc/neutron/plugin.ini state=link
+  notify: restart neutron server
+  when: use_neutron_ml2
+  tags: neutron
+
+- name: create integration bridge
+  openvswitch_bridge: bridge=br-int state=present
+  when: use_neutron
+  tags: neutron
+
+- name: create tunneling bridge
+  openvswitch_bridge: bridge=br-tun state=present
+  when: neutron_ovs_tunnel_type is defined
+  tags: neutron
+
+- name: create external network bridge
+  openvswitch_bridge: bridge={{ neutron_external_network_bridge | default('br-ex') }} state=present
+  when: use_neutron_l3
+  tags: neutron
+
+- name: create ovs bridges
+  openvswitch_bridge: bridge={{ item }} state=present
+  with_items: neutron_ovs_bridges
+  when: use_neutron
+  tags: neutron
+
+- name: configure ovs ports
+  openvswitch_port: bridge={{ ovs_bridge }} port={{ ovs_port }} state=present
+  when: use_neutron
+  tags: neutron
+
+- name: create a directory for the cisco nexus ssh keys
+  file: dest=/var/lib/neutron/.ssh mode=0700 owner=neutron group=neutron state=directory
+  when: use_neutron_cisco
+  tags: neutron
+
+- name: make cisco nexus switch ssh keys known
+  copy: src=special/cisco_nexus.keys dest=/var/lib/neutron/.ssh/known_hosts mode=0644 owner=neutron group=neutron
+  when: use_neutron_cisco
+  tags: neutron
+
+- name: stamp neutron database
+  command: /usr/bin/neutron-db-manage --config-file /usr/share/neutron/neutron-dist.conf --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugin.ini stamp icehouse
+  run_once: true
+  tags: neutron
+
+- name: disable neutron services in systemd
+  service: name={{ item }} enabled=no 
+  with_items:
+    - neutron-server
+    - neutron-openvswitch-agent
+    - neutron-dhcp-agent
+    - neutron-metadata-agent
+    - neutron-l3-agent
+  when: use_neutron and use_ha_controller
+  tags: neutron
+
+- name: enable neutron services
+  service: name={{ item }} enabled=yes state=started
+  with_items:
+    - neutron-server
+    - neutron-openvswitch-agent
+    - neutron-dhcp-agent
+    - neutron-metadata-agent
+  when: use_neutron and not use_ha_controller
+  tags: neutron
+
+- name: create pacemaker resources for neutron-server
+  pcs_resource: command=create name=neutron-server type=systemd:neutron-server clone=yes
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: neutron
+
+- name: create pacemaker resources for ovs cleanup
+  pcs_resource: command=create name=neutron-ovs-cleanup type=ocf:neutron:OVSCleanup clone=yes
+  run_once: true
+  tags: neutron
+
+- name: create pacemaker resources for netns cleanup
+  pcs_resource: command=create name=neutron-netns-cleanup type=ocf:neutron:NetnsCleanup clone=yes
+  run_once: true
+  tags: neutron
+
+- name: create pacemaker resource for neutron openvswitch agent
+  pcs_resource: command=create name=neutron-openvswitch-agent type=systemd:neutron-openvswitch-agent group=neutron-agents
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: neutron
+
+- name: create pacemaker resource for neutron dhcp agent
+  pcs_resource: command=create name=neutron-dhcp-agent type=systemd:neutron-dhcp-agent group=neutron-agents
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: neutron
+
+- name: create pacemaker resource for neutron l3 agent
+  pcs_resource: command=create name=neutron-l3-agent type=systemd:neutron-l3-agent group=neutron-agents
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  when: not use_neutron_cisco
+  tags: neutron
+
+- name: create pacemaker resource for neutron metadata agent
+  pcs_resource: command=create name=neutron-metadata-agent type=systemd:neutron-metadata-agent group=neutron-agents
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: neutron
