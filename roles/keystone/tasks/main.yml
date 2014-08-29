@@ -73,6 +73,12 @@
   copy: src=special/keystone-cakey.pem dest=/etc/keystone/ssl/private/cakey.pem mode=0640 owner=keystone group=keystone
   tags: keystone
 
+# keystone_manage needs to be upgraded to Icehouse
+#- name: run dbsync for keystone
+#  keystone_manage: action=dbsync
+#  run_once: true
+#  tags: keystone
+
 - name: run dbsync for keystone
   shell: su -s /bin/sh -c '/usr/bin/keystone-manage db_sync' keystone
   run_once: true
