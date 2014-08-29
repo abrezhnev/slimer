@@ -1,0 +1,11 @@
+---
+use_nova_network: false
+use_neutron: true
+use_neutron_l3: true
+use_neutron_ml2: true
+use_neutron_ovs: true
+use_neutron_cisco: false
+
+public_ipaddr: "{{ hostvars[inventory_hostname][ 'ansible_' + primary_if ].ipv4.address }}"
+internal_ipaddr: "{{ hostvars[inventory_hostname][ 'ansible_' + private_if ].ipv4.address }}"
+neutron_bind_host: "{{ internal_ipaddr }}"
