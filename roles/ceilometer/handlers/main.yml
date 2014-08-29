@@ -1,0 +1,10 @@
+---
+- name: restart ceilometer
+  service: name={{ item }} state=restarted
+  with_items:
+    - openstack-ceilometer-central
+    - openstack-ceilometer-collector
+    - openstack-ceilometer-api
+    - openstack-ceilometer-alarm-evaluator
+    - openstack-ceilometer-alarm-notifier
+    - openstack-ceilometer-notification
