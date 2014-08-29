@@ -1,0 +1,20 @@
+---
+nova_libvirt_images_type: default
+nova_libvirt_images_rbd_ceph_conf: "/etc/ceph/ceph.conf"
+nova_notification_driver: "nova.openstack.common.notifier.rpc_notifier"
+nova_notification_driver_for_ceilometer: "ceilometer.compute.nova_notifier"
+nova_notify_on_state_change: vm_and_task_state
+nova_network_manager: "nova.network.manager.VlanManager"
+nova_scheduler_manager: "nova.scheduler.manager.SchedulerManager"
+nova_multi_host: true
+nova_security_group_api: nova
+nova_scheduler_host_subset_size: 30
+nova_firewall_driver: "nova.virt.libvirt.firewall.IptablesFirewallDriver"
+nova_conductor_use_local: false
+
+nova_s3_listen_port: 3333
+nova_novncproxy_port: 6080
+nova_spicehtml5proxy_port: 6082
+nova_ec2_listen_port: 8773
+nova_osapi_compute_listen_port: 8774
+nova_metadata_port: 8775
