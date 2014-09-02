@@ -52,10 +52,8 @@
   tags: rabbitmq
 
 - name: set rabbitmq HA policy
-  rabbitmq_policy: name=HA pattern='^(?!amq\.).*'
-  args:
-    tags:
-      "ha-mode": all
+  rabbitmq_policy: name=HA pattern='^(?!amq\.).*' tags="ha-mode=all"
+  run_once: true
   tags: rabbitmq
 
 - name: stop rabbitmq servers
