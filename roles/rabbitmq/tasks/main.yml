@@ -31,12 +31,12 @@
 
 - name: stop rabbitmq app on other controller nodes
   shell: creates=/etc/rabbitmq/step.stop_app rabbitmqctl stop_app; touch /etc/rabbitmq/step.stop_app
-  when: inventory_host != groups.controller[0]
+  when: inventory_hostname != groups.controller[0]
   tags: rabbitmq
 
 - name: join rabbitmq cluster from other controller nodes
   shell: creates=/etc/rabbitmq/step.join_cluster rabbitmqctl join_cluster rabbit@{{ groups.controller[0] }}; touch /etc/rabbitmq/step.join_cluster
-  when: inventory_host != groups.controller[0]
+  when: inventory_hostname != groups.controller[0]
   tags: rabbitmq
 
 - name: pause to let rabbitmq nodes join the cluster
