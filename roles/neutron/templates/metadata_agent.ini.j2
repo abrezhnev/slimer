@@ -4,7 +4,7 @@
 
 # The Neutron user information for accessing the Neutron API.
 auth_url = {{ keystone_private_protocol | default('http') }}://{{ keystone_private_vip | default('localhost') }}:{{ keystone_private_port | default(5000) }}/v2.0
-auth_region = {{ neutron_metadata_auth_region | default('RegionOne') }}
+auth_region = {{ neutron_metadata_auth_region | default('regionOne') }}
 # Turn off verification of the certificate for ssl
 auth_insecure = {{ neutron_metadata_auth_insecure | default(False) }}
 # Certificate Authority public key (CA cert) file for ssl
