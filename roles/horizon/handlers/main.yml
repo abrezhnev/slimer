@@ -6,3 +6,6 @@
     - openstack-nova-novncproxy
     - httpd
     - memcached
+
+- name: restart httpd
+  service: name=httpd state=restarted
