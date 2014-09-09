@@ -3074,7 +3074,7 @@ max_retries=-1
 
 # Use multipath connection of the iSCSI volume (boolean value)
 # Deprecated group;name - DEFAULT;libvirt_iscsi_use_multipath
-#iscsi_use_multipath=false
+iscsi_use_multipath={{ nova_iscsi_use_multipath | default(false) }}
 
 # Use multipath connection of the iSER volume (boolean value)
 # Deprecated group;name - DEFAULT;libvirt_iser_use_multipath
