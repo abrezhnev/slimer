@@ -45,6 +45,12 @@
   when: use_neutron
   tags: neutron
 
+- name: deploy the lbaas_agent.ini file
+  template: src=lbaas_agent.ini.j2 dest=/etc/neutron/lbaas_agent.ini mode=0640 owner=root group=neutron
+  notify: restart neutron lbaas agent
+  when: use_lbaas
+  tags: neutron
+
 - name: deploy the l3_agent.ini file
   template: src=l3_agent.ini.j2 dest=/etc/neutron/l3_agent.ini mode=0640 owner=root group=neutron
   notify: restart neutron l3 agent
@@ -203,4 +209,15 @@
         options:
           start-delay: 10s
   run_once: true
+  tags: neutron
+
+- name: create pacemaker resource for neutron LBaaS agent
+  pcs_resource: command=create name=neutron-lbaas-agent type=systemd:neutron-lbaas-agent group=neutron-agents
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  when: use_lbaas
   tags: neutron

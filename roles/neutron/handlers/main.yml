@@ -8,6 +8,9 @@
 - name: restart neutron dhcp agent
   service: name=neutron-dhcp-agent state=restarted
 
+- name: restart neutron lbaas agent
+  service: name=neutron-lbaas-agent state=restarted
+
 - name: restart neutron openvswitch agent
   service: name=neutron-openvswitch-agent state=restarted
 

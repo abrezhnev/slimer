@@ -15,6 +15,7 @@ use_ceilometer: true
 use_neutron: true
 use_neutron_ml2: true
 use_neutron_cisco: false
+use_lbaas: true
 use_heat: true
 use_ceilometer: true
 cisco_provider_vlan_auto_create: true
