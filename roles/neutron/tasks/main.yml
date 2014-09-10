@@ -137,6 +137,7 @@
     - neutron-dhcp-agent
     - neutron-metadata-agent
     - neutron-l3-agent
+    - neutron-lbaas-agent
   when: use_neutron and use_ha_controller
   tags: neutron
 
@@ -147,6 +148,8 @@
     - neutron-openvswitch-agent
     - neutron-dhcp-agent
     - neutron-metadata-agent
+    - neutron-l3-agent
+    - neutron-lbaas-agent
   when: use_neutron and not use_ha_controller
   tags: neutron
 
