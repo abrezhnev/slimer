@@ -1320,6 +1320,7 @@ netapp_volume_list={{ netapp_volume_list }}
 netapp_storage_family={{ netapp_storage_family | default('ontap_cluster') }}
 netapp_storage_protocol={{ netapp_storage_protocol | default('iscsi') }}
 netapp_transport_type={{ netapp_transport_type | default('http') }}
+netapp_thick_provisioned={{ netapp_thick_provisioned | default(true) }}
 {% endif %}
 
 # The vFiler unit on which provisioning of block storage
