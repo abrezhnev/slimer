@@ -160,13 +160,13 @@
   run_once: true
   tags: neutron
 
-- name: create pacemaker resources for ovs cleanup
-  pcs_resource: command=create name=neutron-ovs-cleanup type=ocf:neutron:OVSCleanup clone=yes
+- name: create pacemaker resource for ovs cleanup
+  pcs_resource: command=create name=neutron-ovs-cleanup type=ocf:neutron:OVSCleanup group=neutron-agents-pre
   run_once: true
   tags: neutron
 
-- name: create pacemaker resources for netns cleanup
-  pcs_resource: command=create name=neutron-netns-cleanup type=ocf:neutron:NetnsCleanup clone=yes
+- name: create pacemaker resource for netns cleanup
+  pcs_resource: command=create name=neutron-netns-cleanup type=ocf:neutron:NetnsCleanup group=neutron-agents-pre
   run_once: true
   tags: neutron
 
