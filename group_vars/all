@@ -101,6 +101,9 @@ ceilometer_pass: SECRET
 nova_vlan_start: 74
 nova_vlan_interface: "{{ private_if }}"
 
+# specific for neutron based network implementation
+nova_security_group_api: neutron
+
 # storage related
 #nova_libvirt_images_type: rbd
 

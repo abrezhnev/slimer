@@ -7,7 +7,6 @@ nova_notify_on_state_change: vm_and_task_state
 nova_network_manager: "nova.network.manager.VlanManager"
 nova_scheduler_manager: "nova.scheduler.manager.SchedulerManager"
 nova_multi_host: true
-nova_security_group_api: nova
 nova_scheduler_host_subset_size: 30
 nova_firewall_driver: "nova.virt.libvirt.firewall.IptablesFirewallDriver"
 nova_conductor_use_local: false
