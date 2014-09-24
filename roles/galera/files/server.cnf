@@ -8,6 +8,8 @@
 # this is read by the standalone daemon and embedded servers
 [server]
 max_connections=5000
+ignore_db_dirs=.cache
+ignore_db_dirs=.config
 
 # this is only for the mysqld standalone daemon
 [mysqld]
