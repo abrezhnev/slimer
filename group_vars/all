@@ -103,6 +103,7 @@ nova_vlan_interface: "{{ private_if }}"
 
 # specific for neutron based network implementation
 nova_security_group_api: neutron
+nova_firewall_driver: neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
 
 # storage related
 #nova_libvirt_images_type: rbd
