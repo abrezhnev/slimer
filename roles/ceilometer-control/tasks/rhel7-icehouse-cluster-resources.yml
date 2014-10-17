@@ -1,0 +1,52 @@
+---
+- name: create pacemaker resource for ceilometer-central
+  pcs_resource: command=create name=ceilometer-central type=systemd:openstack-ceilometer-central
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: ceilometer
+
+- name: create pacemaker resources for ceilometer-collector
+  pcs_resource: command=create name=ceilometer-collector type=systemd:openstack-ceilometer-collector clone=yes
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: ceilometer
+
+- name: create pacemaker resources for ceilometer-api
+  pcs_resource: command=create name=ceilometer-api type=systemd:openstack-ceilometer-api clone=yes
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: ceilometer
+
+- name: create ceilometer-delay resource
+  pcs_resource: command=create name=ceilometer-delay type=Delay clone=yes
+  args:
+    options:
+      startdelay: 10
+  run_once: true
+  tags: ceilometer
+
+- name: create pacemaker resources for ceilometer notification system
+  pcs_resource: command=create name={{ item }} type=systemd:openstack-{{ item }} clone=yes
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  with_items:
+    - ceilometer-alarm-evaluator
+    - ceilometer-alarm-notifier
+    - ceilometer-notification
+  tags: ceilometer

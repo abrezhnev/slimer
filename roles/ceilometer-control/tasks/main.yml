@@ -2,7 +2,6 @@
 - name: install ceilometer packages
   yum: pkg={{ item }} state=present
   with_items:
-    - openstack-ceilometer-common
     - openstack-ceilometer-api
     - openstack-ceilometer-central
     - openstack-ceilometer-collector
@@ -11,12 +10,7 @@
     - python-ceilometerclient
   tags: ceilometer
 
-- name: deploy ceilometer config file
-  template: src=ceilometer.conf.j2 dest=/etc/ceilometer/ceilometer.conf mode=0640 owner=root group=ceilometer
-  notify: restart ceilometer
-  tags: ceilometer
-
-- name: disable ceilometer services in systemd
+- name: disable ceilometer services
   service: name={{ item }} enabled=no
   with_items:
     - openstack-ceilometer-central
@@ -24,57 +18,25 @@
     - openstack-ceilometer-api
     - openstack-ceilometer-alarm-evaluator
     - openstack-ceilometer-alarm-notifier
-    - openstack-ceilometer-notification
   tags: ceilometer
 
-- name: create pacemaker resource for ceilometer-central
-  pcs_resource: command=create name=ceilometer-central type=systemd:openstack-ceilometer-central
-  args:
-    operations:
-      - action: monitor
-        options:
-          start-delay: 10s
-  run_once: true
+- name: disable ceilometer notification service
+  service: name=openstack-ceilometer-notification enabled=no
+  when: openstack_release == 'icehouse'
   tags: ceilometer
 
-- name: create pacemaker resources for ceilometer-collector
-  pcs_resource: command=create name=ceilometer-collector type=systemd:openstack-ceilometer-collector clone=yes
-  args:
-    operations:
-      - action: monitor
-        options:
-          start-delay: 10s
-  run_once: true
+- include: rhel7-icehouse-cluster-resources.yml
+  when: openstack_release == 'icehouse' and ansible_distribution_major_version|int == 7
   tags: ceilometer
 
-- name: create pacemaker resources for ceilometer-api
-  pcs_resource: command=create name=ceilometer-api type=systemd:openstack-ceilometer-api clone=yes
-  args:
-    operations:
-      - action: monitor
-        options:
-          start-delay: 10s
-  run_once: true
+- include: rhel6-icehouse-cluster-resources.yml
+  when: openstack_release == 'icehouse' and ansible_distribution_major_version|int == 6
   tags: ceilometer
 
-- name: create ceilometer-delay resource
-  pcs_resource: command=create name=ceilometer-delay type=Delay clone=yes
-  args:
-    options:
-      startdelay: 10
-  run_once: true
+- include: rhel6-havana-cluster-resources.yml
+  when: openstack_release == 'havana' and ansible_distribution_major_version|int == 6
   tags: ceilometer
 
-- name: create pacemaker resources for ceilometer notification system
-  pcs_resource: command=create name={{ item }} type=systemd:openstack-{{ item }} clone=yes
-  args:
-    operations:
-      - action: monitor
-        options:
-          start-delay: 10s
-  run_once: true
-  with_items:
-    - ceilometer-alarm-evaluator
-    - ceilometer-alarm-notifier
-    - ceilometer-notification
+- include: cluster-constraints.yml
   tags: ceilometer
+

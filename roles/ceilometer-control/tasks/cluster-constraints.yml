@@ -1,0 +1,12 @@
+---
+- name: create pacemaker constraints for ceilometer
+  shell: pcs constraint list --full | grep id:{{ item.id }} || pcs constraint {{ item.cmd }}
+  with_items:
+    - { id: order-ceilometer-central-ceilometer-collector-clone-mandatory, cmd: "order start ceilometer-central then ceilometer-collector-clone" }
+    - { id: order-ceilometer-collector-clone-ceilometer-api-clone-mandatory, cmd: "order start ceilometer-collector-clone then ceilometer-api-clone" }
+    - { id: order-ceilometer-api-clone-ceilometer-delay-clone-mandatory, cmd: "order start ceilometer-api-clone then ceilometer-delay-clone" }
+    - { id: order-ceilometer-delay-clone-ceilometer-alarm-evaluator-clone-mandatory, cmd: "order start ceilometer-delay-clone then ceilometer-alarm-evaluator-clone" }
+    - { id: order-ceilometer-alarm-evaluator-clone-ceilometer-alarm-notifier-clone-mandatory, cmd: "order start ceilometer-alarm-evaluator-clone then ceilometer-alarm-notifier-clone" }
+  run_once: true
+  tags: ceilometer
+

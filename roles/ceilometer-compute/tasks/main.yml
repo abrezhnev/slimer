@@ -1,0 +1,13 @@
+---
+- name: install ceilometer compute software
+  yum: pkg=openstack-ceilometer-compute state=present
+  tags: ceilometer
+
+- name: start dbus
+  service: name=messagebus enabled=yes state=started
+  when: ansible_distribution_major_version|int == 6
+  tags: ceilometer
+
+- name: enable ceilometer-compute
+  service: name=openstack-ceilometer-compute enabled=yes state=started
+  tags: ceilometer

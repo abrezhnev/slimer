@@ -1,0 +1,14 @@
+---
+- name: install ceilometer packages
+  yum: pkg={{ item }} state=present
+  with_items:
+    - openstack-ceilometer-common
+    - python-ceilometer
+    - python-ceilometerclient
+  tags: ceilometer
+
+- name: deploy ceilometer config file
+  template: src={{ openstack_release }}/ceilometer.conf.j2
+            dest=/etc/ceilometer/ceilometer.conf
+            mode=0640 owner=root group=ceilometer
+  tags: ceilometer
