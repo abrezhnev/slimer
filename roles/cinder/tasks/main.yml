@@ -8,17 +8,39 @@
     - openstack-selinux
   tags: cinder
 
+- name: install rabbitmq driver
+  yum: pkg=python-kombu state=present
+  when: use_rabbit
+  tags: cinder
+
+- name: deploy site specific nfs shares config file
+  copy: src=files/cinder/nfs_exports
+        dest=/etc/cinder/nfs_exports
+        mode=0640 owner=root group=cinder
+  when: use_cinder_nfs_driver
+  tags: cinder
+
 - name: deploy cinder config file
-  template: src=cinder.conf.j2 dest=/etc/cinder/cinder.conf mode=0640 owner=root group=cinder
+  template: src={{ openstack_release}}/cinder.conf.j2
+            dest=/etc/cinder/cinder.conf
+            mode=0640 owner=root group=cinder
   notify: restart cinder
   tags: cinder
 
 - name: run dbsync for cinder
-  command: su -s /bin/sh -c '/usr/bin/cinder-manage db sync' cinder
+  command: runuser cinder -s /bin/sh -c '/usr/bin/cinder-manage db sync'
   run_once: true
   tags: cinder
 
-- name: disable cinder services in systemd
+- name: enable nfs support services
+  service: name={{ item }} enabled=yes state=started
+  with_items:
+    - rpcbind
+    - nfslock
+  when: use_cinder_nfs_driver
+  tags: cinder
+
+- name: disable cinder services
   service: name={{ item }} enabled=no
   with_items:
     - openstack-cinder-api
@@ -34,6 +56,18 @@
         options:
           start-delay: 10s
   run_once: true
+  when: ansible_distribution_major_version|int == 7
+  tags: cinder
+
+- name: create pacemaker resources for cinder-api
+  pcs_resource: command=create name=cinder-api type=lsb:openstack-cinder-api clone=yes
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  when: ansible_distribution_major_version|int == 6
   tags: cinder
 
 - name: create pacemaker resources for cinder-volume
@@ -44,6 +78,18 @@
         options:
           start-delay: 10s
   run_once: true
+  when: ansible_distribution_major_version|int == 7
+  tags: cinder
+
+- name: create pacemaker resources for cinder-volume
+  pcs_resource: command=create name=cinder-volume type=lsb:openstack-cinder-volume clone=yes
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  when: ansible_distribution_major_version|int == 6
   tags: cinder
 
 - name: create pacemaker resources for cinder-scheduler
@@ -54,4 +100,27 @@
         options:
           start-delay: 10s
   run_once: true
+  when: ansible_distribution_major_version|int == 7
   tags: cinder
+
+- name: create pacemaker resources for cinder-scheduler
+  pcs_resource: command=create name=cinder-scheduler type=lsb:openstack-cinder-scheduler clone=yes
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  when: ansible_distribution_major_version|int == 6
+  tags: cinder
+
+- name: create pacemaker constraint for cinder api and scheduler
+  shell: pcs constraint list --full | grep id:order-cinder-api-clone-cinder-scheduler-clone-mandatory || pcs constraint order start cinder-api-clone then cinder-scheduler-clone
+  run_once: true
+  tags: cinder
+
+- name: create pacemaker constraint for cinder scheduler and volume
+  shell: pcs constraint list --full | grep id:order-cinder-scheduler-clone-cinder-volume-clone-mandatory || pcs constraint order start cinder-scheduler-clone then cinder-volume-clone
+  run_once: true
+  tags: cinder
+

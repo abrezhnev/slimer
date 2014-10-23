@@ -1538,12 +1538,12 @@ netapp_thick_provisioned={{ netapp_thick_provisioned | default(true) }}
 #nas_private_key=
 
 # File with the list of available nfs shares (string value)
-#nfs_shares_config=/etc/cinder/nfs_shares
+nfs_shares_config={{ cinder_nfs_shares_config }}
 
 # Create volumes as sparsed files which take no space.If set
 # to False volume is created as regular file.In such case
 # volume creation takes a lot of time. (boolean value)
-#nfs_sparsed_volumes=true
+nfs_sparsed_volumes={{ cinder_nfs_sparsed_volumes }}
 
 # Percent of ACTUAL usage of the underlying volume before no
 # new volumes can be allocated to the volume destination.
@@ -1562,6 +1562,7 @@ netapp_thick_provisioned={{ netapp_thick_provisioned | default(true) }}
 # Mount options passed to the nfs client. See section of the
 # nfs man page for details. (string value)
 #nfs_mount_options=<None>
+nfs_mount_options={{ cinder_nfs_mount_options }}
 
 
 #
@@ -1884,7 +1885,9 @@ rbd_secret_uuid={{ rbd_secret_uuid }}
 
 # Driver to use for volume creation (string value)
 #volume_driver=cinder.volume.drivers.lvm.LVMISCSIDriver
-{% if use_ceph %}
+{% if use_cinder_nfs_driver %}
+volume_driver=cinder.volume.drivers.nfs.NfsDriver
+{% elif use_ceph %}
 volume_driver=cinder.volume.drivers.rbd.RBDDriver
 {% elif use_glusterfs %}
 volume_driver=cinder.volume.drivers.glusterfs
