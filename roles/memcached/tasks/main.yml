@@ -16,4 +16,17 @@
         options:
           start-delay: 10s
   run_once: true
+  when: ansible_distribution_major_version|int == 7
+  tags: memcached
+
+- name: create the memcached resources in pacemaker
+  pcs_resource: command=create name=memcached type=lsb:memcached clone=yes
+  args:
+    options:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  when: ansible_distribution_major_version|int == 6
   tags: memcached
