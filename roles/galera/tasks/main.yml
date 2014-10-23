@@ -9,6 +9,7 @@
     - MySQL-python
     - xinetd
     - nfs-utils
+    - rsync
   tags: mysql
 
 - name: deploy clustercheck
@@ -53,7 +54,7 @@
   tags: mysql
 
 - name: pause to let galera start and form the cluster
-  pause: seconds=60
+  pause: seconds=30
   tags: mysql
 
 - name: create clustercheck database user
