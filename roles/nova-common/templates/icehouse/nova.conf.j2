@@ -1560,7 +1560,9 @@ multi_host={{ nova_multi_host }}
 #
 
 # The full class name of the security API class (string value)
+{% if nova_security_group_api != 'noop' %}
 security_group_api={{ nova_security_group_api }}
+{% endif %}
 
 
 #
@@ -2063,7 +2065,7 @@ firewall_driver={{ nova_firewall_driver }}
 # Location of VNC console proxy, in the form
 # "http://127.0.0.1:6080/vnc_auto.html" (string value)
 #novncproxy_base_url=http://127.0.0.1:6080/vnc_auto.html
-novncproxy_base_url=http://{{ nova_private_vip }}:6080/vnc_auto.html
+novncproxy_base_url=http://{{ nova_public_vip }}:6080/vnc_auto.html
 
 # Location of nova xvp VNC console proxy, in the form
 # "http://127.0.0.1:6081/console" (string value)
