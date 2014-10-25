@@ -1,0 +1,6 @@
+---
+pacemaker_rpms:
+  - pacemaker
+  - resource-agents
+  - fence-agents-all
+  - pcs

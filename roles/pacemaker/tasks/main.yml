@@ -1,10 +1,11 @@
 ---
+- name: import OS specific variables
+  include_vars: "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+  tags: pcs
+
 - name: install pacemaker packages
   yum: pkg={{ item }} state=present
-  with_items:
-    - pacemaker
-    - resource-agents
-    - pcs
+  with_items: pacemaker_rpms
   tags: pcs
 
 - name: set password for the hacluster user
@@ -13,15 +14,50 @@
 
 - name: start pcsd
   service: name=pcsd enabled=yes state=started
+  when: ansible_distribution_major_version|int == 7
+  tags: pcs
+
+- name: start pacemaker
+  service: name=pacemaker enabled=yes state=started
+  when: ansible_distribution_major_version|int == 6
   tags: pcs
 
 - name: set pcs cluster auth
   command: pcs cluster auth -u hacluster -p {{ pcs_cluster_pass }} {{ controller_node_names | join(' ') }}
+  when: ansible_distribution_major_version|int == 7
+  tags: pcs
+
+- name: setup pacemaker cluster
+  command: creates=/etc/corosync/corosync.conf pcs cluster setup --name {{ pcs_cluster_name }} {{ controller_node_names | join(' ') }}
+  run_once: true
+  when: ansible_distribution_major_version|int == 7
+  tags: pcs
+
+- name: setup pacemaker cluster
+  command: creates=/etc/cluster/cluster.conf pcs cluster setup --name {{ pcs_cluster_name }} {{ controller_node_names | join(' ') }}
+  run_once: true
+  when: ansible_distribution_major_version|int == 6
+  tags: pcs
+
+- name: set udpu corosync transport
+  lineinfile: dest=/etc/cluster/cluster.conf regexp='  <cman' line='  <cman transport="udpu"/>'
+  run_once: true
+  when: ansible_distribution_major_version|int == 6
+  tags: pcs
+
+- name: fetch cluster.conf file
+  fetch: src=/etc/cluster/cluster.conf dest=special/cluster.conf flat=yes
+  run_once: true
+  when: ansible_distribution_major_version|int == 6
+  tags: pcs
+
+- name: deploy cluster.conf
+  copy: src=special/cluster.conf dest=/etc/cluster/cluster.conf mode=0644 owner=root group=root
+  when: ansible_distribution_major_version|int == 6
   tags: pcs
 
 - name: start pacemaker cluster
-  command: creates=/etc/corosync/corosync.conf pcs cluster setup --start --name {{ pcs_cluster_name }} {{ controller_node_names | join(' ') }}
-  run_once: true
+  command: creates=/var/lib/cluster/cluster.rng pcs cluster start
   tags: pcs
 
 - name: enable pacemaker service
@@ -34,8 +70,7 @@
 
 # this should be re-implemented with the pacemaker_stonith module
 - name: create stonith resources
-#  shell: pcs stonith show fence_{{ item.name }} || pcs stonith create fence_{{ item.name }} fence_{{ item.fencing.agent }} params login={{ item.fencing.login }} passwd="{{ item.fencing.passwd }}" action=reboot ipaddr={{ item.fencing.ipaddr }} lanplus="" verbose="" pcmk_host_list={{ item.name }}
-  shell: pcs stonith show fence_{{ item.name }} || pcs stonith create fence_{{ item.name }} fence_{{ item.fencing.agent }} params login={{ item.fencing.login }} passwd='{{ item.fencing.passwd }}' action=reboot ipaddr={{ item.fencing.ipaddr }} port={{ item.fencing.port }} ssl="1" ssl_insecure="1" verbose="" pcmk_host_list={{ item.name }}
+  shell: "pcs stonith show fence_{{ item.name }} || pcs stonith create fence_{{ item.name }} fence_{{ item.fencing.agent }} params {{ item.fencing.params }} action=reboot pcmk_host_list={{ item.name }}"
   with_items: controller_nodes
   run_once: true
   tags: pcs_fencing
