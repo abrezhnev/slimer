@@ -1,4 +1,11 @@
 ---
+use_nova_network: false
+use_neutron: true
+use_neutron_l3: true
+use_neutron_ml2: true
+use_neutron_ovs: true
+use_neutron_cisco: false
+
 nova_osapi_compute_listen_port: 8774
 neutron_l2_population: true
 neutron_auth_strategy: keystone
