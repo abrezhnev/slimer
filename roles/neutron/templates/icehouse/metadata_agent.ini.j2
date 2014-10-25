@@ -45,7 +45,7 @@ nova_client_cert = {{ neutron_metadata_nova_client_cert }}
 # Private key for nova client certificate
 # nova_client_priv_key =
 {% if neutron_metadata_nova_client_priv_key is defined %}
-nova_client_cert = {{ neutron_metadata_nova_client_priv_key }}
+nova_client_priv_key = {{ neutron_metadata_nova_client_priv_key }}
 {% endif %}
 
 # When proxying metadata requests, Neutron signs the Instance-ID header with a
