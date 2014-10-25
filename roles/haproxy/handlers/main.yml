@@ -2,6 +2,8 @@
 - name: restart haproxy
   service: name=haproxy state=restarted
 
-- name: reload kernel parameters
+- name: reload kernel parameters with systemctl
   command: systemctl restart systemd-sysctl
 
+- name: reload kernel parameters with sysctl
+  command: sysctl -p

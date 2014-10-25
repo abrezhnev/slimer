@@ -5,7 +5,16 @@
 
 - name: set sysctl parameters
   copy: src=haproxy-sysctl.conf dest=/etc/sysctl.d/haproxy.conf mode=0644 owner=root group=root
-  notify: reload kernel parameters
+  when: ansible_distribution_major_version|int == 7
+  notify: reload kernel parameters with systemctl
+  tags: haproxy
+
+- name: set sysctl parameters 
+  lineinfile: dest=/etc/sysctl.conf
+              regexp=^net.ipv4.ip_nonlocal_bind
+              line="net.ipv4.ip_nonlocal_bind = 1"
+  when: ansible_distribution_major_version|int == 6
+  notify: reload kernel parameters with sysctl
   tags: haproxy
 
 - name: set haproxy config file
@@ -25,6 +34,18 @@
         options:
           start-delay: 10s
   run_once: true
+  when: ansible_distribution_major_version|int == 7
+  tags: haproxy
+
+- name: create haproxy pacemaker cloned resources
+  pcs_resource: command=create name=haproxy type=lsb:haproxy clone=yes
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  when: ansible_distribution_major_version|int == 6
   tags: haproxy
 
 - name: create pacemaker controlled VIP addresses
