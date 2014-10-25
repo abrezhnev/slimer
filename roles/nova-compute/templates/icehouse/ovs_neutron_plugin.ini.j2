@@ -88,7 +88,7 @@ tunnel_id_ranges = {{ neutron_ovs_tunnel_id_ranges }}
 # empty for the server. Set local-ip to be the local IP address of
 # this hypervisor.
 #
-local_ip = {{ internal_ipaddr }}
+local_ip = {{ tunnel_ipaddr }}
 
 # (ListOpt) Comma-separated list of <physical_network>:<bridge> tuples
 # mapping physical network names to the agent's node-specific OVS
@@ -100,8 +100,8 @@ local_ip = {{ internal_ipaddr }}
 #
 # bridge_mappings =
 # Example: bridge_mappings = physnet1:br-eth1
-{% if neutron_ovs_bridge_mappings is defined %}
-bridge_mappings = {{ neutron_ovs_bridge_mappings }}
+{% if nova_ovs_bridge_mappings is defined %}
+bridge_mappings = {{ nova_ovs_bridge_mappings }}
 {% endif %}
 
 [agent]
@@ -128,8 +128,10 @@ bridge_mappings = {{ neutron_ovs_bridge_mappings }}
 # Example: tunnel_types = gre
 # Example: tunnel_types = vxlan
 # Example: tunnel_types = vxlan, gre
-{% if neutron_agent_tunnel_types is defined %}
+{% if use_neutron_ml2 and neutron_agent_tunnel_types is defined %}
 tunnel_types = {{ neutron_agent_tunnel_types }}
+{% elif use_neutron_ovs and neutron_ovs_tunnel_type is defined %}
+tunnel_types = {{ neutron_ovs_tunnel_type }}
 {% endif %}
 
 # (IntOpt) The port number to utilize if tunnel_types includes 'vxlan'. By
@@ -152,7 +154,9 @@ vxlan_udp_port = {{ neutron_vxlan_udp_port }}
 # RPC calbbacks instead of tunnel_sync/update) on OVS agents in order to
 # optimize tunnel management.
 #
+{% if use_neutron_ml2 is defined and use_neutron_ml2 %}
 l2_population = {{ neutron_l2_population }}
+{% endif %}
 
 [securitygroup]
 # Firewall driver for realizing neutron security group function.
