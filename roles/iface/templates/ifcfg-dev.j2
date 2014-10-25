@@ -1,0 +1,4 @@
+DEVICE={{ device }}
+{% for k,v in params|dictsort %}
+{{ k | upper }}={{ v }}
+{% endfor %}

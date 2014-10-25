@@ -1,0 +1,4 @@
+---
+- name: deploy bonding interface config file
+  template: src=ifcfg-dev.j2 dest=/etc/sysconfig/network-scripts/ifcfg-{{ device }}
+  tags: iface
