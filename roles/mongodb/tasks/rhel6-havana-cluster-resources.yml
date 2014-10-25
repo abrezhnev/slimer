@@ -1,0 +1,6 @@
+---
+- name: create pacemaker resources for mongodb
+  pcs_resource: command=create name=mongodb type=lsb:mongod clone=yes
+  run_once: true
+  tags: mongodb
+

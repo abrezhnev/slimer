@@ -1,0 +1,11 @@
+---
+- name: create pacemaker resources for mongodb
+  pcs_resource: command=create name=mongodb type=systemd:mongod clone=yes
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: mongodb
+

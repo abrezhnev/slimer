@@ -21,8 +21,13 @@
   copy: src=special/mongodb-secret dest=/var/lib/mongodb/secret owner=mongodb group=mongodb mode=0400
   tags: mongodb
 
+- name: create data directory for mongodb
+  file: path=/var/lib/mongodb/data state=directory
+        owner=mongodb group=mongodb mode=0750
+  tags: mongodb
+
 - name: start the mongodb service
-  service: name=mongod state=started
+  service: name=mongod enabled=no state=started
   tags: mongodb
 
 - name: pause for a while
@@ -46,12 +51,15 @@
   service: name=mongod enabled=no state=stopped
   tags: mongodb
 
-- name: create pacemaker resources for mongodb
-  pcs_resource: command=create name=mongodb type=systemd:mongod clone=yes
-  args:
-    operations:
-      - action: monitor
-        options:
-          start-delay: 10s
-  run_once: true
+- include: rhel7-icehouse-cluster-resources.yml
+  when: openstack_release == 'icehouse' and ansible_distribution_major_version|int == 7
   tags: mongodb
+
+- include: rhel6-icehouse-cluster-resources.yml
+  when: openstack_release == 'icehouse' and ansible_distribution_major_version|int == 6
+  tags: mongodb
+
+- include: rhel6-havana-cluster-resources.yml
+  when: openstack_release == 'havana' and ansible_distribution_major_version|int == 6
+  tags: mongodb
+
