@@ -11,6 +11,7 @@ listen stats :8888
     mode http
     stats uri /
 
+{% if use_ha_db is defined and use_ha_db %}
 frontend vip-db
     bind {{ lb_db_vip }}:3306
     timeout client 90s
@@ -23,7 +24,12 @@ backend db-galera
     stick on dst
     timeout server 90s
 {% for node in controller_nodes %}
+{% if use_galera_active_active is defined and use_galera_active_active %}
     server {{ node.name }} {{ node.addr_int }}:3306 check inter 1s port 9200
+{% else %}
+    server {{ node.name }} {{ node.addr_int }}:3306 check inter 1s on-marked-down shutdown-sessions port 9200 {% if node.name  != controller_nodes[0].name %}backup{% endif %}
+
+{% endif %}
 {% endfor %}
 {% else %}
 backend db-mariadb
@@ -32,6 +38,7 @@ backend db-mariadb
 {% for node in controller_nodes %}
     server {{ node.name }} {{ node.addr_int }}:3306 check inter 1s
 {% endfor %}
+{% endif %}
 {% endif %}
 
 frontend vip-msg
