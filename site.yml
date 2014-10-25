@@ -1,5 +1,6 @@
 ---
+#- include: database.yml
+- include: ceph-nodes.yml
 - include: controllers.yml
 - include: compute-nodes.yml
-- include: ceph-nodes.yml
 
