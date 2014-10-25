@@ -1,17 +1,16 @@
 ---
+- include: "RedHat-rpms.yml"
+  when: ansible_os_family == "RedHat"
+  tags: common
+
 - name: enable ssh key-based access
-  authorized_key: user=root key="{{ item }}"
-  with_file: root-id_rsa.pub
+  authorized_key: user=root key="{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+  notify: restore selinux context of .ssh files
+  tags: sshkey
 
 - name: set selinux policy and mode
   selinux: policy=targeted state=permissive
-
-- name: set yum repos
-  copy: dest=/etc/yum.repos.d src={{ item }}
-  with_items: 
-    - rhel-x86_64-server-7.repo
-    - osp5.repo
-  when: ansible_distribution_version == "7.0"
+  tags: selinux
 
 - name: install ntp
   yum: pkg=ntp state=installed
@@ -36,7 +35,3 @@
 - name: start ntpd service
   service: name=ntpd enabled=yes state=started
   tags: ntp
-
-- name: install sos-plugins-openstack
-  yum: pkg=sos-plugins-openstack state=present
-  tags: sos

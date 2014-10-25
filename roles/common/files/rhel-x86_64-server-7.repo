@@ -1,5 +1,0 @@
-[rhel-server-7-x86_64-dvd]
-name=RHEL_7_x86_64_DVD
-baseurl=http://10.161.1.70/rhel-server-7.0/
-enabled=1
-gpgcheck=0

@@ -1,0 +1,13 @@
+---
+- include: "RedHat-rpms.yml"
+  when: ansible_os_family == "RedHat"
+  tags: openstack-common
+
+- name: disable NetworkManager
+  service: name=NetworkManager enabled=no state=stopped
+  tags: openstack-common
+
+- name: disable firewalld
+  service: name=firewalld enabled=no state=stopped
+  when: ansible_distribution_major_version|int == 7
+  tags: openstack-common

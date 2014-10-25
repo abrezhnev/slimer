@@ -1,0 +1,12 @@
+---
+- name: install rpms useful for OpenStack operations and troubleshooting
+  yum: name={{ item }} state=present
+  with_items:
+    - sos-plugins-openstack
+    - nfs-utils
+    - iscsi-initiator-utils
+    - bridge-utils
+    - libvirt
+    - net-tools
+    - traceroute
+    - tcpdump

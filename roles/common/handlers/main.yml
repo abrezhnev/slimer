@@ -1,3 +1,6 @@
 ---
 - name: restart ntpd
   service: name=ntpd state=restarted
+
+- name: restore selinux context of .ssh files
+  command: restorecon -R -v /root/.ssh
