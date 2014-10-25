@@ -1,0 +1,16 @@
+---
+- name: create pacemaker resources for nova control services
+  pcs_resource: command=create name=nova-{{ item }} type=systemd:openstack-nova-{{ item }} clone=yes
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  with_items:
+    - consoleauth
+    - novncproxy
+    - api
+    - scheduler
+    - conductor
+  tags: nova

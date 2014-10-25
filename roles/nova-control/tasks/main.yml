@@ -13,7 +13,7 @@
   tags: nova
 
 - name: run dbsync for nova
-  shell: su -s /bin/sh -c '/usr/bin/nova-manage db sync' nova
+  shell: runuser nova -s /bin/sh -c '/usr/bin/nova-manage db sync'
   run_once: true
   tags: nova
 
@@ -27,18 +27,14 @@
     - openstack-nova-conductor
   tags: nova
 
-- name: create pacemaker resources for nova control services
-  pcs_resource: command=create name=nova-{{ item }} type=systemd:openstack-nova-{{ item }} clone=yes
-  args:
-    operations:
-      - action: monitor
-        options:
-          start-delay: 10s
-  run_once: true
-  with_items:
-    - consoleauth
-    - novncproxy
-    - api
-    - scheduler
-    - conductor
+- include: rhel7-icehouse-cluster-resources.yml
+  when: openstack_release == 'icehouse' and ansible_distribution_major_version|int == 7
+  tags: nova
+
+- include: rhel6-icehouse-cluster-resources.yml
+  when: openstack_release == 'icehouse' and ansible_distribution_major_version|int == 6
+  tags: nova
+
+- include: rhel6-havana-cluster-resources.yml
+  when: openstack_release == 'havana' and ansible_distribution_major_version|int == 6
   tags: nova

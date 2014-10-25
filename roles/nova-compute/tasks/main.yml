@@ -7,13 +7,32 @@
     - openstack-utils
     - python-cinder
     - openstack-ceilometer-compute
-    - ceph-common
     - iscsi-initiator-utils
     - nfs-utils
+    - libvirt
+  tags: nova
+
+- name: install ceph package
+  yum: name=ceph-common state=present
+  when: use_ceph
+  tags: nova
+
+- name: enable nfs support services
+  service: name={{ item }} enabled=yes state=started
+  with_items:
+    - rpcbind
+    - nfslock
+  when: use_cinder_nfs_driver
+  tags: nova
+
+- name: enable libvirtd service
+  service: name=libvirtd enabled=yes state=started
+  tags: nova
 
 - name: install nova-network
-  yum: pkg=openstack-nova-network
+  yum: pkg=openstack-nova-network state=present
   when: use_nova_network
+  tags: nova
 
 - name: install neutron network node
   yum: pkg={{ item }} state=present
@@ -21,81 +40,107 @@
     - openvswitch
     - openstack-neutron-openvswitch
   when: use_neutron
+  tags: nova
 
 - name: start openvswitch
   service: name=openvswitch enabled=yes state=started
   when: use_neutron
+  tags: nova
 
 - name: create integration bridge
   openvswitch_bridge: bridge=br-int state=present
   when: use_neutron
+  tags: nova
 
 - name: create tunneling bridge
   openvswitch_bridge: bridge=br-tun state=present
   when: neutron_ovs_tunnel_type is defined
-  tags: neutron
+  tags: nova
 
 - name: create ovs bridges
-  openvswitch_bridge: bridge={{ item }} state=present
+  openvswitch_bridge: bridge={{ item.bridge }} state=present
   with_items: neutron_ovs_bridges
-  when: use_neutron
+  when: neutron_ovs_bridges is defined
+  tags: nova
 
 - name: configure ovs ports
-  openvswitch_port: bridge={{ ovs_bridge }} port={{ ovs_port }} state=present
-  when: use_neutron
+  openvswitch_port: bridge={{ item.bridge }} port={{ item.port }} state=present
+  with_items: neutron_ovs_bridges
+  when: neutron_ovs_bridges is defined
+  tags: nova
 
 - name: deploy neutron config file
-  template: src=neutron.conf.j2 dest=/etc/neutron/neutron.conf mode=0640 owner=root group=neutron
+  template: src={{ openstack_release }}/neutron.conf.j2
+            dest=/etc/neutron/neutron.conf
+            mode=0640 owner=root group=neutron
   notify: restart neutron openvswitch agent
   when: use_neutron
+  tags: nova
 
 - name: create a directory for cisco plugins
   file: dest=/etc/neutron/plugins/cisco mode=0755 owner=root group=root state=directory
-  when: use_neutron
+  when: use_neutron_cisco
+  tags: nova
 
 - name: deploy neutron config file
-  template: src=cisco_plugins.ini.j2 dest=/etc/neutron/plugins/cisco/cisco_plugins.ini mode=0640 owner=root group=neutron
+  template: src={{ openstack_release }}/cisco_plugins.ini.j2
+            dest=/etc/neutron/plugins/cisco/cisco_plugins.ini
+            mode=0640 owner=root group=neutron
   notify: restart neutron openvswitch agent
-  when: use_neutron
+  when: use_neutron_cisco
+  tags: nova
 
 - name: deploy neutron openswitch config file
-  template: src=ovs_neutron_plugin.ini.j2 dest=/etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini mode=0640 owner=root group=neutron
+  template: src={{ openstack_release }}/ovs_neutron_plugin.ini.j2
+            dest=/etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini
+            mode=0640 owner=root group=neutron
   notify: restart neutron openvswitch agent
-  when: use_neutron
+  when: use_neutron_ovs
+  tags: nova
 
 - name: create a directory for the cisco nexus ssh keys
   file: dest=/var/lib/neutron/.ssh mode=0700 owner=neutron group=neutron state=directory
   when: use_neutron_cisco
+  tags: nova
 
 - name: make cisco nexus switch ssh keys known
-  copy: src=special/cisco_nexus.keys dest=/var/lib/neutron/.ssh/known_hosts mode=0644 owner=neutron group=neutron
+  copy: src=special/cisco_nexus.keys
+        dest=/var/lib/neutron/.ssh/known_hosts
+        mode=0644 owner=neutron group=neutron
   when: use_neutron_cisco
+  tags: nova
 
 - name: copy ceph.client.cinder.keyring to nova-compute nodes
-  copy: src=special/ceph.client.cinder.keyring dest=/etc/ceph/ceph.client.cinder.keyring mode=0600 owner=root group=root
+  copy: src=special/ceph.client.cinder.keyring
+        dest=/etc/ceph/ceph.client.cinder.keyring
+        mode=0600 owner=root group=root
   when: use_ceph
+  tags: nova
 
 - name: deploy nova secret.xml file to enable access to the ceph storage
-  template: src=nova-secret.xml.j2 dest=/tmp/secret.xml
+  template: src={{ openstack_release }}/nova-secret.xml.j2 dest=/tmp/secret.xml
   when: use_ceph
+  tags: nova
 
 - name: set libvirt secret value
   shell: virsh secret-set-value --secret $(virsh secret-define --file /tmp/secret.xml | awk '{print $2}') --base64 $(awk '/key/ {print $3}' /etc/ceph/ceph.client.cinder.keyring)
   when: use_ceph
+  tags: nova
 
 - name: start neutorn networking
   service: name={{ item }} enabled=yes state=started
-  when: use_neutron
   with_items:
     - neutron-ovs-cleanup
     - neutron-openvswitch-agent
+  when: use_neutron
+  tags: nova
 
-- name: start compute services
-  service: name={{ item }} enabled=yes state=started
-  with_items:
-    - libvirtd
-    - openstack-nova-compute
+- name: start nova-compute services
+  service: name=openstack-nova-compute enabled=yes state=started
+  tags: nova
 
 - name: start nova network
   service: name=openstack-nova-network enabled=yes state=started
   when: use_nova_network
+  tags: nova
+
