@@ -1,0 +1,27 @@
+---
+int_if:
+  ipaddr: 172.16.20.26
+  netmask: 255.255.255.0
+  gateway: 172.16.20.1
+  dns1: 172.27.0.200
+  dns2: 172.27.0.201
+  vlan: 1610
+
+storage_if:
+  ipaddr: 172.16.21.26
+  netmask: 255.255.255.0
+  vlan: 1611
+
+ext_if:
+  ipaddr: 172.16.22.26
+  netmask: 255.255.255.0
+  gateway: 172.16.22.1
+  dns1: 172.27.0.200
+  dns2: 172.27.0.201
+  vlan: 1612
+
+tun_if:
+  ipaddr: 172.16.23.26
+  netmask: 255.255.255.0
+  vlan: 1613
+

@@ -1,4 +1,11 @@
 ---
-- hosts: osd
+- hosts: ceph
   roles:
+    - { role: iface, device: p4p1, params: { type: Ethernet, bootproto: none, onboot: '"yes"', master: bond0, slave: '"yes"' } }
+    - { role: iface, device: p4p2, params: { type: Ethernet, bootproto: none, onboot: '"yes"', master: bond0, slave: '"yes"' } }
+    - { role: iface, device: bond0, params: { nozeroconf: '"yes"', bootproto: none, bonding_opts: '"mode=4 miimon=100 lacp_rate=1"', onboot: yes } }
+    - { role: iface, device: "bond0.{{ int_if.vlan }}", params: { type: Ethernet, vlan: '"yes"', nozeroconf: '"yes"', bootproto: static, ipaddr: "{{ int_if.ipaddr }}", netmask: "{{ int_if.netmask }}", onboot: '"yes"' } }
+    - { role: iface, device: "bond0.{{ storage_if.vlan }}", params: { type: Ethernet, vlan: '"yes"', nozeroconf: '"yes"', bootproto: static, ipaddr: "{{ storage_if.ipaddr }}", netmask: "{{ storage_if.netmask }}", onboot: '"yes"' } }
+    - { role: iface, device: "bond0.{{ ceph_if.vlan }}", params: { type: Ethernet, vlan: '"yes"', nozeroconf: '"yes"', bootproto: static, ipaddr: "{{ ceph_if.ipaddr }}", netmask: "{{ ceph_if.netmask }}", onboot: '"yes"' } }
+
     - common

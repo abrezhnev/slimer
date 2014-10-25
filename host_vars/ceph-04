@@ -1,0 +1,16 @@
+---
+int_if:
+  ipaddr: 172.16.20.39
+  netmask: 255.255.255.0
+  vlan: 1610
+
+storage_if:
+  ipaddr: 172.16.21.39
+  netmask: 255.255.255.0
+  vlan: 1611
+
+ceph_if:
+  ipaddr: 172.16.24.39
+  netmask: 255.255.255.0
+  vlan: 1614
+
