@@ -1,0 +1,25 @@
+---
+- name: create pacemaker resources for heat
+  pcs_resource: command=create name={{ item }} type=lsb:openstack-{{ item }} clone=yes
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  with_items:
+    - heat-api
+    - heat-api-cfn
+    - heat-api-cloudwatch
+  tags: heat
+
+- name: create pacemaker resource for heat-engine
+  pcs_resource: command=create name=heat-engine type=lsb:openstack-heat-engine
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: heat
+

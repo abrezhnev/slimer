@@ -354,7 +354,11 @@ notification_driver=heat.openstack.common.notifier.rpc_notifier
 
 # The messaging module to use, defaults to kombu. (string
 # value)
+{% if use_qpid is defined and use_qpid %}
+rpc_backend=heat.openstack.common.rpc.impl_qpid
+{% elif use_rabbit %}
 rpc_backend=heat.openstack.common.rpc.impl_kombu
+{% endif %}
 
 # Size of RPC thread pool (integer value)
 #rpc_thread_pool_size=64

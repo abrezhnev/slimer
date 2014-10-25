@@ -14,7 +14,9 @@
   tags: heat
 
 - name: deploy heat config file
-  template: src=heat.conf.j2 dest=/etc/heat/heat.conf mode=0640 owner=root group=heat
+  template: src={{ openstack_release }}/heat.conf.j2
+            dest=/etc/heat/heat.conf
+            mode=0640 owner=root group=heat
   notify: restart heat
   tags: heat
 
@@ -30,6 +32,21 @@
     - openstack-heat-api-cfn
     - openstack-heat-api-cloudwatch
     - openstack-heat-engine
+  tags: heat
+
+- include: rhel7-icehouse-cluster-resources.yml
+  when: openstack_release == 'icehouse' and ansible_distribution_major_version|int == 7
+  tags: heat
+
+- include: rhel6-icehouse-cluster-resources.yml
+  when: openstack_release == 'icehouse' and ansible_distribution_major_version|int == 6
+  tags: heat
+
+- include: rhel6-havana-cluster-resources.yml
+  when: openstack_release == 'havana' and ansible_distribution_major_version|int == 6
+  tags: heat
+
+- include: cluster-constraints.yml
   tags: heat
 
 - name: create pacemaker resources for heat
