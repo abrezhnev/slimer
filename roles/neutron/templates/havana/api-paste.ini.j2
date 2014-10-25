@@ -1,0 +1,28 @@
+[composite:neutron]
+use = egg:Paste#urlmap
+/: neutronversions
+/v2.0: neutronapi_v2_0
+
+[composite:neutronapi_v2_0]
+use = call:neutron.auth:pipeline_factory
+noauth = extensions neutronapiapp_v2_0
+keystone = authtoken keystonecontext extensions neutronapiapp_v2_0
+
+[filter:keystonecontext]
+paste.filter_factory = neutron.auth:NeutronKeystoneContext.factory
+
+[filter:authtoken]
+auth_host = {{ keystone_admin_vip | default('127.0.0.1') }}
+admin_tenant_name = services
+admin_user = neutron
+admin_password = {{ neutron_pass }}
+paste.filter_factory = keystoneclient.middleware.auth_token:filter_factory
+
+[filter:extensions]
+paste.filter_factory = neutron.api.extensions:plugin_aware_extension_middleware_factory
+
+[app:neutronversions]
+paste.app_factory = neutron.api.versions:Versions.factory
+
+[app:neutronapiapp_v2_0]
+paste.app_factory = neutron.api.v2.router:APIRouter.factory

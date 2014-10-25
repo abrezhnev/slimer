@@ -1,0 +1,79 @@
+---
+- name: set pacemaker resource stickiness
+  command: pcs resource defaults resource-stickiness=100
+  tags: neutron
+
+- name: set pacemaker property
+  pcs_property: name=start-failure-is-fatal value=false
+  tags: neutron
+
+- name: create pacemaker resources for neutron-server
+  pcs_resource: command=create name=neutron-server type=lsb:neutron-server
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: neutron
+
+- name: create pacemaker resources for ovs cleanup
+  pcs_resource: command=create name={{ item }} type=lsb:{{ item }} group=neutron-agents-pre
+  run_once: true
+  with_items:
+    - neutron-ovs-cleanup
+    - neutron-netns-cleanup
+    - neutron-agent-watch
+  tags: neutron
+
+- name: create pacemaker resource for neutron openvswitch agent
+  pcs_resource: command=create name=neutron-openvswitch-agent type=lsb:neutron-openvswitch-agent group=neutron-agents
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: neutron
+
+- name: create pacemaker resource for neutron dhcp agent
+  pcs_resource: command=create name=neutron-dhcp-agent type=lsb:neutron-dhcp-agent group=neutron-agents
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: neutron
+
+- name: create pacemaker resource for neutron l3 agent
+  pcs_resource: command=create name=neutron-l3-agent type=lsb:neutron-l3-agent group=neutron-agents
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  when: use_neutron_l3
+  tags: neutron
+
+- name: create pacemaker resource for neutron metadata agent
+  pcs_resource: command=create name=neutron-metadata-agent type=lsb:neutron-metadata-agent group=neutron-agents
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: neutron
+
+- name: create pacemaker resource for neutron LBaaS agent
+  pcs_resource: command=create name=neutron-lbaas-agent type=lsb:neutron-lbaas-agent group=neutron-agents
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  when: use_lbaas
+  tags: neutron

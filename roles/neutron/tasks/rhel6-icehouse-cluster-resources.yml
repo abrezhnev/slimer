@@ -1,0 +1,70 @@
+---
+- name: create pacemaker resources for neutron-server
+  pcs_resource: command=create name=neutron-server type=lsb:neutron-server clone=yes
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: neutron
+
+- name: create pacemaker resource for ovs cleanup
+  pcs_resource: command=create name=neutron-ovs-cleanup type=ocf:neutron:OVSCleanup group=neutron-agents-pre
+  run_once: true
+  tags: neutron
+
+- name: create pacemaker resource for netns cleanup
+  pcs_resource: command=create name=neutron-netns-cleanup type=ocf:neutron:NetnsCleanup group=neutron-agents-pre
+  run_once: true
+  tags: neutron
+
+- name: create pacemaker resource for neutron openvswitch agent
+  pcs_resource: command=create name=neutron-openvswitch-agent type=lsb:neutron-openvswitch-agent group=neutron-agents
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: neutron
+
+- name: create pacemaker resource for neutron dhcp agent
+  pcs_resource: command=create name=neutron-dhcp-agent type=lsb:neutron-dhcp-agent group=neutron-agents
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: neutron
+
+- name: create pacemaker resource for neutron l3 agent
+  pcs_resource: command=create name=neutron-l3-agent type=lsb:neutron-l3-agent group=neutron-agents
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: neutron
+
+- name: create pacemaker resource for neutron metadata agent
+  pcs_resource: command=create name=neutron-metadata-agent type=lsb:neutron-metadata-agent group=neutron-agents
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: neutron
+
+- name: create pacemaker resource for neutron LBaaS agent
+  pcs_resource: command=create name=neutron-lbaas-agent type=lsb:neutron-lbaas-agent group=neutron-agents
+  args:
+    operations:
+      - action: monitor
+        options:
+          start-delay: 10s
+  run_once: true
+  tags: neutron

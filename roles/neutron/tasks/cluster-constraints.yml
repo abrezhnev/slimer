@@ -1,0 +1,10 @@
+---
+- name: create pacemaker order constraint for neutron
+  shell: pcs constraint list --full | grep id:order-neutron-agents-pre-neutron-agents-mandatory || pcs constraint order start neutron-agents-pre then neutron-agents
+  run_once: true
+  tags: neutron
+
+- name: create pacemaker colocation constraint for neutron
+  shell: pcs constraint list --full | grep id:colocation-neutron-agents-neutron-agents-pre || pcs constraint colocation add neutron-agents with neutron-agents-pre
+  run_once: true
+  tags: neutron

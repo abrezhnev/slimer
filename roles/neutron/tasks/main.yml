@@ -3,12 +3,20 @@
   yum: pkg={{ item }} state=present
   with_items:
     - openstack-neutron
-    - openstack-neutron-openvswitch
-    - openstack-neutron-ml2
     - openstack-utils
     - openstack-selinux
     - openvswitch
   when: use_neutron
+  tags: neutron
+
+- name: install ml2 plugin
+  yum: pkg=openstack-neutron-ml2 state=present
+  when: use_neutron_ml2
+  tags: neutron
+
+- name: install openvswitch plugin
+  yum: pkg=openstack-neutron-openvswitch state=present
+  when: use_neutron_ovs
   tags: neutron
 
 - name: install cisco plugin
@@ -27,65 +35,87 @@
   when: use_neutron
   tags: neutron
 
+- name: deploy Havana specific Neutron config files
+  template: src=havana/{{ item }}.j2
+            dest=/etc/neutron/{{ item }}
+            mode=0640 owner=root group=neutron
+  with_items:
+    - agent_watch.ini
+    - api-paste.ini
+  when: use_neutron and openstack_release == 'havana'
+  tags: neutron
+
+- name: set custom Neutron policy
+  copy: src=files/neutron/policy.json
+        dest=/etc/neutron/policy.json
+        mode=0640 owner=root group=neutron
+  when: use_neutron_custom_policy
+  tags: neutron
+
 - name: deploy the neutron.conf file
-  template: src=neutron.conf.j2 dest=/etc/neutron/neutron.conf mode=0640 owner=root group=neutron
-  notify: restart neutron server
+  template: src={{ openstack_release }}/neutron.conf.j2
+            dest=/etc/neutron/neutron.conf
+            mode=0640 owner=root group=neutron
   when: use_neutron
   tags: neutron
 
 - name: deploy the metadata_agent.ini file
-  template: src=metadata_agent.ini.j2 dest=/etc/neutron/metadata_agent.ini mode=0640 owner=root group=neutron
-  notify: restart neutron metadata agent
+  template: src={{ openstack_release }}/metadata_agent.ini.j2
+            dest=/etc/neutron/metadata_agent.ini
+            mode=0640 owner=root group=neutron
   when: use_neutron
   tags: neutron
 
 - name: deploy the dhcp_agent.ini file
-  template: src=dhcp_agent.ini.j2 dest=/etc/neutron/dhcp_agent.ini mode=0640 owner=root group=neutron
-  notify: restart neutron dhcp agent
+  template: src={{ openstack_release }}/dhcp_agent.ini.j2
+            dest=/etc/neutron/dhcp_agent.ini
+            mode=0640 owner=root group=neutron
   when: use_neutron
   tags: neutron
 
 - name: deploy the lbaas_agent.ini file
-  template: src=lbaas_agent.ini.j2 dest=/etc/neutron/lbaas_agent.ini mode=0640 owner=root group=neutron
-  notify: restart neutron lbaas agent
+  template: src={{ openstack_release }}/lbaas_agent.ini.j2
+            dest=/etc/neutron/lbaas_agent.ini
+            mode=0640 owner=root group=neutron
   when: use_lbaas
   tags: neutron
 
 - name: deploy the l3_agent.ini file
-  template: src=l3_agent.ini.j2 dest=/etc/neutron/l3_agent.ini mode=0640 owner=root group=neutron
-  notify: restart neutron l3 agent
+  template: src={{ openstack_release }}/l3_agent.ini.j2
+            dest=/etc/neutron/l3_agent.ini
+            mode=0640 owner=root group=neutron
   when: use_neutron
   tags: neutron
 
 - name: deploy the ml2_conf.ini file
-  template: src=ml2_conf.ini.j2 dest=/etc/neutron/plugins/ml2/ml2_conf.ini mode=0640 owner=root group=neutron
-  notify: restart neutron server
+  template: src={{ openstack_release }}/ml2_conf.ini.j2
+            dest=/etc/neutron/plugins/ml2/ml2_conf.ini
+            mode=0640 owner=root group=neutron
   when: use_neutron_ml2
   tags: neutron
 
 - name: deploy the ovs_neutron_plugin.ini file
-  template: src=ovs_neutron_plugin.ini.j2 dest=/etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini mode=0640 owner=root group=neutron
-  notify:
-    - restart neutron openvswitch agent
-    - restart neutron server
-  when: use_neutron
+  template: src={{ openstack_release }}/ovs_neutron_plugin.ini.j2
+            dest=/etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini
+            mode=0640 owner=root group=neutron
+  when: use_neutron_ovs
   tags: neutron
 
 - name: deploy the cisco_plugins.ini file
-  template: src=cisco_plugins.ini.j2 dest=/etc/neutron/plugins/cisco/cisco_plugins.ini mode=0640 owner=root group=neutron
-  notify: restart neutron server
-  when: use_neutron_cisco
-  tags: neutron
-
-- name: link plugin.ini to the ovs plugin config file
-  file: src=/etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini dest=/etc/neutron/plugin.ini state=link
+  template: src={{ openstack_release }}/cisco_plugins.ini.j2
+            dest=/etc/neutron/plugins/cisco/cisco_plugins.ini
+            mode=0640 owner=root group=neutron
   when: use_neutron_cisco
   tags: neutron
 
 - name: link plugin.ini to the ml2 plugin config file
   file: src=/etc/neutron/plugins/ml2/ml2_conf.ini dest=/etc/neutron/plugin.ini state=link
-  notify: restart neutron server
   when: use_neutron_ml2
+  tags: neutron
+
+- name: link plugin.ini to the ovs plugin config file
+  file: src=/etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini dest=/etc/neutron/plugin.ini state=link
+  when: use_neutron_ovs and not use_neutron_ml2
   tags: neutron
 
 - name: create integration bridge
@@ -104,14 +134,15 @@
   tags: neutron
 
 - name: create ovs bridges
-  openvswitch_bridge: bridge={{ item }} state=present
+  openvswitch_bridge: bridge={{ item.bridge }} state=present
   with_items: neutron_ovs_bridges
-  when: use_neutron
+  when: neutron_ovs_bridges is defined
   tags: neutron
 
 - name: configure ovs ports
-  openvswitch_port: bridge={{ ovs_bridge }} port={{ ovs_port }} state=present
-  when: use_neutron
+  openvswitch_port: bridge={{ item.bridge }} port={{ item.port }} state=present
+  with_items: neutron_ovs_bridges
+  when: neutron_ovs_bridges is defined
   tags: neutron
 
 - name: create a directory for the cisco nexus ssh keys
@@ -125,15 +156,14 @@
   tags: neutron
 
 - name: stamp neutron database
-  command: /usr/bin/neutron-db-manage --config-file /usr/share/neutron/neutron-dist.conf --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugin.ini stamp icehouse
+  command: /usr/bin/neutron-db-manage --config-file /usr/share/neutron/neutron-dist.conf --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugin.ini stamp "{{ openstack_release }}"
   run_once: true
   tags: neutron
 
-- name: disable neutron services in systemd
+- name: disable neutron services
   service: name={{ item }} enabled=no 
   with_items:
     - neutron-server
-    - neutron-openvswitch-agent
     - neutron-dhcp-agent
     - neutron-metadata-agent
     - neutron-l3-agent
@@ -141,11 +171,15 @@
   when: use_neutron and use_ha_controller
   tags: neutron
 
+- name: disable neutron-openvswitch-agent
+  service: name=neutron-openvswitch-agent enabled=no 
+  when: use_neutron_ovs and use_ha_controller
+  tags: neutron
+
 - name: enable neutron services
   service: name={{ item }} enabled=yes state=started
   with_items:
     - neutron-server
-    - neutron-openvswitch-agent
     - neutron-dhcp-agent
     - neutron-metadata-agent
     - neutron-l3-agent
@@ -153,74 +187,22 @@
   when: use_neutron and not use_ha_controller
   tags: neutron
 
-- name: create pacemaker resources for neutron-server
-  pcs_resource: command=create name=neutron-server type=systemd:neutron-server clone=yes
-  args:
-    operations:
-      - action: monitor
-        options:
-          start-delay: 10s
-  run_once: true
+- name: enable neutron-openvswitch-agent
+  service: name=neutron-openvswitch-agent enabled=yes state=started
+  when: use_neutron_ovs and not use_ha_controller
   tags: neutron
 
-- name: create pacemaker resource for ovs cleanup
-  pcs_resource: command=create name=neutron-ovs-cleanup type=ocf:neutron:OVSCleanup group=neutron-agents-pre
-  run_once: true
+- include: rhel7-icehouse-cluster-resources.yml
+  when: openstack_release == 'icehouse' and ansible_distribution_major_version|int == 7
   tags: neutron
 
-- name: create pacemaker resource for netns cleanup
-  pcs_resource: command=create name=neutron-netns-cleanup type=ocf:neutron:NetnsCleanup group=neutron-agents-pre
-  run_once: true
+- include: rhel6-icehouse-cluster-resources.yml
+  when: openstack_release == 'icehouse' and ansible_distribution_major_version|int == 6
   tags: neutron
 
-- name: create pacemaker resource for neutron openvswitch agent
-  pcs_resource: command=create name=neutron-openvswitch-agent type=systemd:neutron-openvswitch-agent group=neutron-agents
-  args:
-    operations:
-      - action: monitor
-        options:
-          start-delay: 10s
-  run_once: true
+- include: rhel6-havana-cluster-resources.yml
+  when: openstack_release == 'havana' and ansible_distribution_major_version|int == 6
   tags: neutron
 
-- name: create pacemaker resource for neutron dhcp agent
-  pcs_resource: command=create name=neutron-dhcp-agent type=systemd:neutron-dhcp-agent group=neutron-agents
-  args:
-    operations:
-      - action: monitor
-        options:
-          start-delay: 10s
-  run_once: true
-  tags: neutron
-
-- name: create pacemaker resource for neutron l3 agent
-  pcs_resource: command=create name=neutron-l3-agent type=systemd:neutron-l3-agent group=neutron-agents
-  args:
-    operations:
-      - action: monitor
-        options:
-          start-delay: 10s
-  run_once: true
-  when: not use_neutron_cisco
-  tags: neutron
-
-- name: create pacemaker resource for neutron metadata agent
-  pcs_resource: command=create name=neutron-metadata-agent type=systemd:neutron-metadata-agent group=neutron-agents
-  args:
-    operations:
-      - action: monitor
-        options:
-          start-delay: 10s
-  run_once: true
-  tags: neutron
-
-- name: create pacemaker resource for neutron LBaaS agent
-  pcs_resource: command=create name=neutron-lbaas-agent type=systemd:neutron-lbaas-agent group=neutron-agents
-  args:
-    operations:
-      - action: monitor
-        options:
-          start-delay: 10s
-  run_once: true
-  when: use_lbaas
+- include: cluster-constraints.yml
   tags: neutron

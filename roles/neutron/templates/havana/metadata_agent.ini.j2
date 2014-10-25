@@ -1,0 +1,68 @@
+[DEFAULT]
+host=networker
+
+# Show debugging output in log (sets DEBUG log level output)
+# debug = True
+
+# The Neutron user information for accessing the Neutron API.
+auth_strategy={{ neutron_auth_strategy }}
+auth_url = {{ keystone_private_protocol | default('http') }}://{{ keystone_private_vip | default('localhost') }}:{{ keystone_private_port | default(5000) }}/v2.0
+auth_host = {{ keystone_admin_vip | default('127.0.0.1') }}
+auth_region = {{ neutron_metadata_auth_region | default('regionOne') }}
+# Turn off verification of the certificate for ssl
+auth_insecure = {{ neutron_metadata_auth_insecure | default(False) }}
+# Certificate Authority public key (CA cert) file for ssl
+# auth_ca_cert =
+{% if neutron_metadata_auth_ca_cert is defined %}
+auth_ca_cert = {{ neutron_metadata_auth_ca_cert }}
+{% endif %}
+
+admin_tenant_name = services
+admin_user = neutron
+admin_password = {{ neutron_pass | default('secret') }}
+
+# Network service endpoint type to pull from the keystone catalog
+# endpoint_type = adminURL
+
+# IP address used by Nova metadata server
+nova_metadata_ip = {{ nova_private_vip | default('127.0.0.1') }}
+
+# TCP Port used by Nova metadata server
+nova_metadata_port = {{ nova_metadata_port | default(8775) }}
+
+# Which protocol to use for requests to Nova metadata server, http or https
+nova_metadata_protocol = {{ nova_metadata_protocol | default('http') }}
+
+# Whether insecure SSL connection should be accepted for Nova metadata server
+# requests
+nova_metadata_insecure = {{ nova_metadata_insecure | default(False) }}
+
+# Client certificate for nova api, needed when nova api requires client
+# certificates
+# nova_client_cert =
+{% if neutron_metadata_nova_client_cert is defined %}
+nova_client_cert = {{ neutron_metadata_nova_client_cert }}
+{% endif %}
+
+# Private key for nova client certificate
+# nova_client_priv_key =
+{% if neutron_metadata_nova_client_priv_key is defined %}
+nova_client_priv_key = {{ neutron_metadata_nova_client_priv_key }}
+{% endif %}
+
+# When proxying metadata requests, Neutron signs the Instance-ID header with a
+# shared secret to prevent spoofing.  You may select any string for a secret,
+# but it must match here and in the configuration used by the Nova Metadata
+# Server. NOTE: Nova uses a different key: neutron_metadata_proxy_shared_secret
+{% if neutron_metadata_proxy_shared_secret is defined %}
+metadata_proxy_shared_secret = {{ neutron_metadata_proxy_shared_secret }}
+{% endif %}
+
+# Location of Metadata Proxy UNIX domain socket
+# metadata_proxy_socket = $state_path/metadata_proxy
+
+# URL to connect to the cache backend.
+# default_ttl=0 parameter will cause cache entries to never expire.
+# Otherwise default_ttl specifies time in seconds a cache entry is valid for.
+# No cache is used in case no value is passed.
+# cache_url = memory://?default_ttl=5

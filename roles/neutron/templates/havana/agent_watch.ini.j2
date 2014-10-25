@@ -1,0 +1,25 @@
+[DEFAULT]
+# Show debugging output in log (sets DEBUG log level output)
+# debug = False 
+
+# The Neutron user information for accessing the Neutron API.
+auth_strategy={{ neutron_auth_strategy }}
+auth_url = {{ keystone_private_protocol | default('http') }}://{{ keystone_private_vip | default('localhost') }}:{{ keystone_private_port | default(5000) }}/v2.0
+auth_region = {{ neutron_metadata_auth_region | default('regionOne') }}
+admin_tenant_name = services
+admin_user = neutron
+admin_password = {{ neutron_pass | default('secret') }}
+
+# Network service endpoint type to pull from the keystone catalog
+# endpoint_type = adminURL
+
+#watched_agents=<name>:<agent-pid-file>:<emulated-status-file>:setting=value,setting=value
+# settings can be: host: to match the host value in the agent ini file
+#                  isolated_metadata=True :  when we use isolated metadata servers
+#                                            with the neutron-dhcp-agent
+watched_agents=dhcp:/var/run/neutron/neutron-dhcp-agent.pid:/var/run/neutron/neutron-dhcp-agent.status:isolated_metadata=False
+watched_agents=l3:/var/run/neutron/neutron-l3-agent.pid:/var/run/neutron/neutron-l3-agent.status:host=networker
+
+check_interval=20
+max_propagation_delay=60
+max_agent_downtime=3600
