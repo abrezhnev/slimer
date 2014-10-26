@@ -34,7 +34,7 @@
   tags: horizon
 
 - name: get first http request
-  get_url: url=http://{{ horizon_bind_host | default( internal_ipaddr ) }}/dashboard dest=/dev/null force=yes
+  get_url: url={{ dashboard_first_request_url }} dest=/dev/null use_proxy=no
   run_once: true
   tags: horizon
 
