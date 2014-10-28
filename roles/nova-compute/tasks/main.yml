@@ -110,9 +110,9 @@
   when: use_neutron_cisco
   tags: nova
 
-- name: copy ceph.client.cinder.keyring to nova-compute nodes
-  copy: src=special/ceph.client.cinder.keyring
-        dest=/etc/ceph/ceph.client.cinder.keyring
+- name: copy cinder ceph client keyring to nova-compute nodes
+  copy: src=files/cinder/ceph.client.keyring
+        dest=/etc/ceph/ceph.client.{{ cinder_rbd_user | default('cinder') }}.keyring
         mode=0600 owner=root group=root
   when: use_ceph
   tags: nova
@@ -123,7 +123,7 @@
   tags: nova
 
 - name: set libvirt secret value
-  shell: virsh secret-set-value --secret $(virsh secret-define --file /tmp/secret.xml | awk '{print $2}') --base64 $(awk '/key/ {print $3}' /etc/ceph/ceph.client.cinder.keyring)
+  shell: virsh secret-set-value --secret $(virsh secret-define --file /tmp/secret.xml | awk '{print $2}') --base64 $(awk '/key/ {print $3}' /etc/ceph/ceph.client.{{ cinder_rbd_user | default('cinder') }}.keyring)
   when: use_ceph
   tags: nova
 
