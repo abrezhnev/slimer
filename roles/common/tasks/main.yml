@@ -27,7 +27,7 @@
   when: force_ntpdate == "yes"
   tags: ntp
 
-- name: sync time from {{ ntp }}
+- name: sync time from ntp servers
   command: ntpdate {{ ntp | join(" ") }}
   when: force_ntpdate == "yes"
   tags: ntp
@@ -35,3 +35,7 @@
 - name: start ntpd service
   service: name=ntpd enabled=yes state=started
   tags: ntp
+
+- name: deploy resolv.conf
+  copy: src=files/resolv.conf dest=/etc/resolv.conf
+  tags: dns
