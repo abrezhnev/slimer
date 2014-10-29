@@ -34,7 +34,7 @@
   tags: horizon
 
 - name: get first http request
-  get_url: url={{ dashboard_first_request_url }} dest=/dev/null use_proxy=no
+  get_url: url={{ dashboard_first_request_url }} dest=/dev/null force=yes use_proxy=no
   run_once: true
   tags: horizon
 
