@@ -47,6 +47,7 @@
         options:
           start-delay: 10s
   run_once: true
+  when: use_neutron_l3
   tags: neutron
 
 - name: create pacemaker resource for neutron metadata agent
