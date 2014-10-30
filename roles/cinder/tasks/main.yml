@@ -17,7 +17,7 @@
   copy: src=files/cinder/nfs_exports
         dest=/etc/cinder/nfs_exports
         mode=0640 owner=root group=cinder
-  when: use_cinder_nfs_driver
+  when: use_cinder_nfs_driver or use_netapp
   tags: cinder
 
 - name: deploy cinder config file
