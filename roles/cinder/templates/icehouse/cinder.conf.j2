@@ -1562,7 +1562,9 @@ nfs_sparsed_volumes={{ cinder_nfs_sparsed_volumes }}
 # Mount options passed to the nfs client. See section of the
 # nfs man page for details. (string value)
 #nfs_mount_options=<None>
+{% if cinder_nfs_mount_options is defined %}
 nfs_mount_options={{ cinder_nfs_mount_options }}
+{% endif %}
 
 
 #

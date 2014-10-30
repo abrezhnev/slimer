@@ -10,7 +10,6 @@ cinder_osapi_volume_workers: 10
 cinder_auth_strategy: keystone
 cinder_nfs_shares_config: "/etc/cinder/nfs_exports"
 cinder_nfs_sparsed_volumes: true
-cinder_nfs_mount_options: v3
 
 netapp_storage_family: ontap_cluster
 netapp_storage_protocol: nfs
