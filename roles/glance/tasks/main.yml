@@ -16,6 +16,11 @@
   when: default_store == 'file'
   tags: glance
 
+- name: enable nfs-idmap
+  service: name=nfs-idmap enabled=yes state=started
+  when: ansible_distribution_major_version|int == 7
+  tags: glance
+
 - name: install rabbitmq driver
   yum: pkg=python-kombu state=present
   when: use_rabbit
