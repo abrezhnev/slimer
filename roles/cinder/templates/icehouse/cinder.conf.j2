@@ -583,6 +583,9 @@ auth_strategy={{ cinder_auth_strategy }}
 # be backed by a unique [CONFIG] group with its options (list
 # value)
 #enabled_backends=<None>
+{% if cinder_enabled_backends is defined %}
+enabled_backends={{ cinder_enabled_backends | join(',') }}
+{% endif %}
 
 # Whether snapshots count against GigaByte quota (boolean
 # value)
@@ -1274,54 +1277,6 @@ auth_strategy={{ cinder_auth_strategy }}
 #
 # Options defined in cinder.volume.drivers.netapp.options
 #
-{% if use_netapp %}
-{% if netapp_vfiler is defined and netapp_storage_family == 'ontap_7mode' and netapp_storage_protocol == 'iscsi' %}
-netapp_vfiler={{ netapp_vfiler }}
-{% endif %}
-{% if netapp_login is defined %}
-netapp_login={{ netapp_login }}
-{% endif %}
-{% if netapp_password is defined %}
-netapp_password={{ netapp_password }}
-{% endif %}
-{% if netapp_vserver is defined %}
-netapp_vserver={{ netapp_vserver }}
-{% endif %}
-{% if netapp_server_hostname is defined %}
-netapp_server_hostname={{ netapp_server_hostname }}
-{% endif %}
-{% if netapp_server_port is defined %}
-netapp_server_port={{ netapp_server_port }}
-{% endif %}
-{% if netapp_storage_family == 'eseries' %}
-netapp_webservice_path={{ netapp_webservice_path | default('/devmgr/v2') }}
-{% if netapp_controller_ips is defined %}
-netapp_controller_ips={{ netapp_controller_ips }}
-{% endif %}
-{% if netapp_sa_password is defined %}
-netapp_sa_password={{ netapp_sa_password }}
-{% endif %}
-{% endif %}
-{% if netapp_storage_pools is defined %}
-netapp_storage_pools={{ netapp_storage_pools }}
-{% endif %}
-{% if netapp_storage_protocol == 'nfs' %}
-thres_avl_size_perc_start={{ netapp_thres_avl_size_perc_start | default(20) }}
-thres_avl_size_perc_stop={{ netapp_thres_avl_size_perc_stop | default(60) }}
-expiry_thres_minutes={{ netapp_expiry_thres_minutes | default(720) }}
-{% endif %}
-{% if netapp_copyoffload_tool_path is defined %}
-netapp_copyoffload_tool_path={{ netapp_copyoffload_tool_path }}
-{% endif %}
-netapp_size_multiplier={{ netapp_size_multiplier | default(1.2) }}
-{% if netapp_volume_list is defined and netapp_storage_protocol == 'iscsi' and netapp_storage_family == 'ontap_7mode' %}
-netapp_volume_list={{ netapp_volume_list }}
-{% endif %}
-netapp_storage_family={{ netapp_storage_family | default('ontap_cluster') }}
-netapp_storage_protocol={{ netapp_storage_protocol | default('iscsi') }}
-netapp_transport_type={{ netapp_transport_type | default('http') }}
-netapp_thick_provisioned={{ netapp_thick_provisioned | default(true) }}
-{% endif %}
 
 # The vFiler unit on which provisioning of block storage
 # volumes will be done. This option is only used by the driver
@@ -1538,12 +1493,12 @@ netapp_thick_provisioned={{ netapp_thick_provisioned | default(true) }}
 #nas_private_key=
 
 # File with the list of available nfs shares (string value)
-nfs_shares_config={{ cinder_nfs_shares_config }}
+#nfs_shares_config={{ cinder_nfs_shares_config }}
 
 # Create volumes as sparsed files which take no space.If set
 # to False volume is created as regular file.In such case
 # volume creation takes a lot of time. (boolean value)
-nfs_sparsed_volumes={{ cinder_nfs_sparsed_volumes }}
+#nfs_sparsed_volumes={{ cinder_nfs_sparsed_volumes }}
 
 # Percent of ACTUAL usage of the underlying volume before no
 # new volumes can be allocated to the volume destination.
@@ -1562,9 +1517,6 @@ nfs_sparsed_volumes={{ cinder_nfs_sparsed_volumes }}
 # Mount options passed to the nfs client. See section of the
 # nfs man page for details. (string value)
 #nfs_mount_options=<None>
-{% if cinder_nfs_mount_options is defined %}
-nfs_mount_options={{ cinder_nfs_mount_options }}
-{% endif %}
 
 
 #
@@ -1887,17 +1839,6 @@ rbd_secret_uuid={{ rbd_secret_uuid }}
 
 # Driver to use for volume creation (string value)
 #volume_driver=cinder.volume.drivers.lvm.LVMISCSIDriver
-{% if use_cinder_nfs_driver %}
-volume_driver=cinder.volume.drivers.nfs.NfsDriver
-{% elif use_ceph %}
-volume_driver=cinder.volume.drivers.rbd.RBDDriver
-{% elif use_glusterfs %}
-volume_driver=cinder.volume.drivers.glusterfs
-{% elif use_netapp %}
-volume_driver=cinder.volume.drivers.netapp.common.NetAppDriver
-{% else %}
-volume_driver=cinder.volume.drivers.lvm.LVMISCSIDriver
-{% endif %}
 
 # Timeout for creating the volume to migrate to when
 # performing volume migration (seconds) (integer value)
@@ -1913,7 +1854,109 @@ volume_driver=cinder.volume.drivers.lvm.LVMISCSIDriver
 # User defined capabilities, a JSON formatted string
 # specifying key/value pairs. (string value)
 #extra_capabilities={}
+{% if use_cinder_lvmiscsi_volume_driver %}
 
+[{{ cinder_lvmiscsi_volume_backend_name }}]
+volume_backend_name={{ cinder_lvmiscsi_volume_backend_name }}
+volume_driver=cinder.volume.drivers.lvm.LVMISCSIDriver
+volume_group=cinder-volumes
+lvm_mirrors=0
+lvm_type=default
+{% endif %}
+{% if use_cinder_nfs_volume_driver %}
+
+[{{ cinder_nfs_volume_backend_name }}]
+volume_backend_name={{ cinder_nfs_volume_backend_name }}
+volume_driver=cinder.volume.drivers.nfs.NfsDriver
+#nas_ip=
+#nas_login=admin
+#nas_password=
+#nas_ssh_port=22
+#nas_private_key=
+nfs_shares_config={{ cinder_nfs_shares_config }}
+nfs_sparsed_volumes={{ cinder_nfs_sparsed_volumes }}
+#nfs_used_ratio=0.95
+#nfs_oversub_ratio=1.0
+#nfs_mount_point_base=$state_path/mnt
+{% if cinder_nfs_mount_options is defined %}
+nfs_mount_options={{ cinder_nfs_mount_options }}
+{% endif %}
+{% endif %}
+{% if use_ceph %}
+
+[{{ cinder_ceph_volume_backend_name }}]
+volume_backend_name={{ cinder_ceph_volume_backend_name }}
+volume_driver=cinder.volume.drivers.rbd.RBDDriver
+rbd_pool={{ cinder_rbd_pool | default('volumes') }}
+rbd_user={{ cinder_rbd_user | default('cinder') }}
+rbd_ceph_conf={{ cinder_rbd_ceph_conf | default('/etc/ceph/ceph.conf') }}
+rbd_secret_uuid={{ rbd_secret_uuid }}
+{% endif %}
+{% if use_glusterfs %}
+
+[{{ cinder_glusterfs_volume_backend_name }}]
+volume_backend_name={{ cinder_glusterfs_volume_backend_name }}
+volume_driver=cinder.volume.drivers.glusterfs.GlusterfsDriver
+glusterfs_shares_config={{ cinder_glusterfs_shares_config }}
+glusterfs_sparsed_volumes={{ cinder_glusterfs_sparsed_volumes }}
+glusterfs_qcow2_volumes={{ cinder_glusterfs_qcow2_volumes }}
+{% endif %}
+{% if use_netapp %}
+
+[{{ cinder_netapp_volume_backend_name }}]
+volume_backend_name={{ cinder_netapp_volume_backend_name }}
+volume_driver=cinder.volume.drivers.netapp.common.NetAppDriver
+{% if netapp_vfiler is defined and netapp_storage_family == 'ontap_7mode' and netapp_storage_protocol == 'iscsi' %}
+netapp_vfiler={{ netapp_vfiler }}
+{% endif %}
+{% if netapp_login is defined %}
+netapp_login={{ netapp_login }}
+{% endif %}
+{% if netapp_password is defined %}
+netapp_password={{ netapp_password }}
+{% endif %}
+{% if netapp_vserver is defined %}
+netapp_vserver={{ netapp_vserver }}
+{% endif %}
+{% if netapp_server_hostname is defined %}
+netapp_server_hostname={{ netapp_server_hostname }}
+{% endif %}
+{% if netapp_server_port is defined %}
+netapp_server_port={{ netapp_server_port }}
+{% endif %}
+{% if netapp_storage_family == 'eseries' %}
+netapp_webservice_path={{ netapp_webservice_path | default('/devmgr/v2') }}
+{% if netapp_controller_ips is defined %}
+netapp_controller_ips={{ netapp_controller_ips }}
+{% endif %}
+{% if netapp_sa_password is defined %}
+netapp_sa_password={{ netapp_sa_password }}
+{% endif %}
+{% endif %}
+{% if netapp_storage_pools is defined %}
+netapp_storage_pools={{ netapp_storage_pools }}
+{% endif %}
+{% if netapp_storage_protocol == 'nfs' %}
+thres_avl_size_perc_start={{ netapp_thres_avl_size_perc_start | default(20) }}
+thres_avl_size_perc_stop={{ netapp_thres_avl_size_perc_stop | default(60) }}
+expiry_thres_minutes={{ netapp_expiry_thres_minutes | default(720) }}
+nfs_shares_config={{ cinder_nfs_shares_config }}
+{% if cinder_nfs_mount_options is defined %}
+nfs_mount_options={{ cinder_nfs_mount_options }}
+{% endif %}
+{% endif %}
+{% if netapp_copyoffload_tool_path is defined %}
+netapp_copyoffload_tool_path={{ netapp_copyoffload_tool_path }}
+{% endif %}
+netapp_size_multiplier={{ netapp_size_multiplier | default(1.2) }}
+{% if netapp_volume_list is defined and netapp_storage_protocol == 'iscsi' and netapp_storage_family == 'ontap_7mode' %}
+netapp_volume_list={{ netapp_volume_list }}
+{% endif %}
+netapp_storage_family={{ netapp_storage_family | default('ontap_cluster') }}
+netapp_storage_protocol={{ netapp_storage_protocol | default('iscsi') }}
+netapp_transport_type={{ netapp_transport_type | default('http') }}
+netapp_thick_provisioned={{ netapp_thick_provisioned | default(true) }}
+{% endif %}
 
 [BRCD_FABRIC_EXAMPLE]
 
