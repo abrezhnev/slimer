@@ -38,6 +38,22 @@
   when: use_nova_shared_backend
   tags: nova
 
+- name: modify libvirtd parameters
+  template: src={{ openstack_release }}/sysconfig-libvirtd.j2
+            dest=/etc/sysconfig/libvirtd
+            mode=0644 owner=root group=root
+  when: nova_instance_live_migration
+  notify: restart libvirtd
+  tags: nova
+
+- name: set libvirtd.conf
+  template: src={{ openstack_release }}/libvirtd.conf.j2
+            dest=/etc/libvirt/libvirtd.conf
+            mode=0644 owner=root group=root
+  when: nova_instance_live_migration
+  notify: restart libvirtd
+  tags: nova
+
 - name: enable libvirtd service
   service: name=libvirtd enabled=yes state=started
   tags: nova
