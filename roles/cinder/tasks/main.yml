@@ -20,6 +20,13 @@
   when: use_cinder_nfs_volume_driver or use_netapp
   tags: cinder
 
+- name: deploy netapp copy offload tool
+  copy: src=files/cinder/na_copyoffload_64
+        dest={{ netapp_copyoffload_tool_path }}
+        mode=4755 owner=root group=root
+  when: use_netapp_copyoffload
+  tags: cinder
+
 - name: deploy cinder config file
   template: src={{ openstack_release}}/cinder.conf.j2
             dest=/etc/cinder/cinder.conf

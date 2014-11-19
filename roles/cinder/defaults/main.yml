@@ -5,6 +5,7 @@ use_cinder_nfs_volume_driver: false
 use_ceph: false
 use_glusterfs: false
 use_netapp: false
+use_netapp_copyoffload: false
 
 cinder_lvmiscsi_volume_backend_name: LVM_iSCSI
 cinder_nfs_volume_backend_name: Generic_NFS
@@ -23,3 +24,4 @@ cinder_glusterfs_qcow2_volumes: false
 
 netapp_storage_family: ontap_cluster
 netapp_storage_protocol: nfs
+netapp_copyoffload_tool_path: "/usr/local/bin/na_copyoffload_64"
