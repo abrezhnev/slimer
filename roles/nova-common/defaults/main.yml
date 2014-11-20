@@ -11,6 +11,10 @@ nova_security_group_api: nova
 nova_scheduler_host_subset_size: 30
 nova_firewall_driver: "nova.virt.libvirt.firewall.IptablesFirewallDriver"
 nova_conductor_use_local: false
+nova_rpc_conn_pool_size: 30
+nova_rpc_thread_pool_size: 64
+nova_wsgi_default_pool_size: 1000
+nova_database_min_pool_size: 1
 
 nova_s3_listen_port: 3333
 nova_novncproxy_port: 6080
