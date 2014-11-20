@@ -3,3 +3,6 @@ keystone_auth_protocol: http
 keystone_public_protocol: http
 keystone_auth_port: 35357
 keystone_public_port: 5000
+keystone_rpc_conn_pool_size: 30
+keystone_rpc_thread_pool_size: 64
+keystone_database_min_pool_size: 1
