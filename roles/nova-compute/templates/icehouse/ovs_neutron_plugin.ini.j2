@@ -147,6 +147,9 @@ vxlan_udp_port = {{ neutron_vxlan_udp_port }}
 # The default MTU size of veth interfaces is 1500.
 # veth_mtu =
 # Example: veth_mtu = 1504
+{% if neutron_ovs_veth_mtu is defined %}
+veth_mtu = {{ neutron_ovs_veth_mtu }}
+{% endif %}
 
 # (BoolOpt) Flag to enable l2-population extension. This option should only be
 # used in conjunction with ml2 plugin and l2population mechanism driver. It'll
