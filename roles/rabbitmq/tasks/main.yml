@@ -12,8 +12,14 @@
   tags: rabbitmq
 
 - name: increase the number of allowed open file descriptors for rabbitmq
-  copy: src=limits.conf dest=/etc/security/limits.d/90-rabbitmq.conf
+  template: src=limits.conf.j2 dest=/etc/security/limits.d/90-rabbitmq.conf
   when: ansible_distribution_major_version|int == 7
+  tags: rabbitmq
+
+- name: set custom systemd unit for rabbitmq
+  template: src=rabbitmq-server.service.j2 dest=/etc/systemd/system/rabbitmq-server.service
+  when: ansible_distribution_major_version|int == 7
+  notify: change selinux context of the custome rabbitmq-server.service file
   tags: rabbitmq
 
 - name: generate erlang cookie file on the first controller

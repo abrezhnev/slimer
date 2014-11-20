@@ -1,0 +1,22 @@
+[Unit]
+Description=RabbitMQ broker
+After=syslog.target network.target
+Requires=epmd@0.0.0.0.socket
+
+[Service]
+Type=simple
+User=rabbitmq
+Group=rabbitmq
+Environment=RABBITMQ_PID_FILE=/var/run/rabbitmq/pid
+WorkingDirectory=/var/lib/rabbitmq
+LimitNOFILE={{ rabbitmq_limit_nofile }}
+# Ensure cookie is created to avoid race
+# See https://bugzilla.redhat.com/show_bug.cgi?id=1059913
+ExecStartPre=-/bin/sh -c "/usr/lib/rabbitmq/bin/rabbitmqctl status > /dev/null 2>&1"
+ExecStart=/usr/lib/rabbitmq/bin/rabbitmq-server
+ExecStartPost=/usr/lib/rabbitmq/bin/rabbitmqctl wait /var/run/rabbitmq/pid
+ExecStop=/usr/lib/rabbitmq/bin/rabbitmqctl stop
+ExecStopPost=/usr/bin/rm /var/run/rabbitmq/pid
+
+[Install]
+WantedBy=multi-user.target
