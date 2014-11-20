@@ -2086,7 +2086,11 @@ novncproxy_base_url=http://{{ nova_public_vip }}:6080/vnc_auto.html
 # IP address on which instance vncservers should listen
 # (string value)
 #vncserver_listen=127.0.0.1
+{% if nova_instance_live_migration is defined and nova_instance_live_migration %}
+vncserver_listen=0.0.0.0
+{% else %}
 vncserver_listen={{ internal_ipaddr }}
+{% endif %}
 
 # The address to which proxy clients (like nova-xvpvncproxy)
 # should connect (string value)
@@ -2909,6 +2913,9 @@ pool_timeout={{ nova_database_pool_timeout }}
 
 # Migration flags to be set for live migration (string value)
 #live_migration_flag=VIR_MIGRATE_UNDEFINE_SOURCE, VIR_MIGRATE_PEER2PEER
+{% if not use_ceph and nova_instance_live_migration %}
+live_migration_flag=VIR_MIGRATE_UNDEFINE_SOURCE, VIR_MIGRATE_PEER2PEER, VIR_MIGRATE_LIVE, VIR_MIGRATE_TUNNELLED
+{% endif %}
 
 # Migration flags to be set for block migration (string value)
 #block_migration_flag=VIR_MIGRATE_UNDEFINE_SOURCE, VIR_MIGRATE_PEER2PEER, VIR_MIGRATE_NON_SHARED_INC

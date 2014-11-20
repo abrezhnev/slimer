@@ -22,3 +22,4 @@ nova_spicehtml5proxy_port: 6082
 nova_ec2_listen_port: 8773
 nova_osapi_compute_listen_port: 8774
 nova_metadata_port: 8775
+nova_instance_live_migration: false
