@@ -29,6 +29,14 @@
   notify: restart glance
   tags: glance
 
+- name: deploy a site specific glance config file
+  copy: src=files/glance/filesystem_store_metadata.json
+        dest=/etc/glance/filesystem_store_metadata.json
+        mode=0640 owner=root group=glance
+  when: use_netapp_copyoffload
+  notify: restart glance
+  tags: glance
+
 - name: run db_sync for glance
   shell: runuser glance -s /bin/sh -c '/usr/bin/glance-manage db_sync'
   run_once: true

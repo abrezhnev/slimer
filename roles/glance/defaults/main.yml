@@ -1,3 +1,5 @@
 ---
 use_glance: true
 default_store: file
+glance_show_image_direct_url: false
+glance_show_multiple_locations: false

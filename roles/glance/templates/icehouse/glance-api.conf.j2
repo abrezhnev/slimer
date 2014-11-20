@@ -85,9 +85,7 @@ bind_port=9292
 # be returned to the user in the 'direct_url' meta-data field.
 # The default value is false.
 #show_image_direct_url=False
-{% if default_store == 'rbd' %}
-show_image_direct_url=True
-{% endif %}
+show_image_direct_url={{ glance_show_image_direct_url }}
 
 
 # Send headers containing user and tenant information when making requests to
@@ -279,6 +277,9 @@ rabbit_port = {{ rabbit_port | default(5672) }}
 # Directory that the Filesystem backend store
 # writes image data to
 filesystem_store_datadir=/var/lib/glance/images/
+{% if glance_filesystem_store_file_perm is defined %}
+filesystem_store_file_perm={{ glance_filesystem_store_file_perm }}
+{% endif %}
 
 # A list of directories where image data can be stored.
 # This option may be specified multiple times for specifying multiple store
@@ -299,6 +300,10 @@ filesystem_store_datadir=/var/lib/glance/images/
 # file will be returned with any location that is contained in this
 # store.
 #filesystem_store_metadata_file=None
+show_multiple_locations={{ glance_show_multiple_locations }}
+{% if glance_filesystem_store_metadata_file is defined %}
+filesystem_store_metadata_file={{ glance_filesystem_store_metadata_file }}
+{% endif %}
 
 # ============ Swift Store Options =============================
 
