@@ -114,8 +114,10 @@ auth_strategy={{ neutron_auth_strategy }}
 # rpc_backend = neutron.openstack.common.rpc.impl_kombu
 # Size of RPC thread pool
 # rpc_thread_pool_size = 64
+rpc_thread_pool_size = {{ neutron_thread_pool_size }}
 # Size of RPC connection pool
 # rpc_conn_pool_size = 30
+rpc_conn_pool_size = {{ neutron_rpc_conn_pool_size }}
 # Seconds to wait for a response from call or multicall
 # rpc_response_timeout = 60
 # Seconds to wait before a cast expires (TTL). Only supported by impl_zmq.
@@ -445,9 +447,11 @@ max_retries = -1
 
 # Minimum number of SQL connections to keep open in a pool
 # min_pool_size = 1
+min_pool_size = {{ neutron_database_min_pool_size }}
 
 # Maximum number of SQL connections to keep open in a pool
 # max_pool_size = 10
+max_pool_size = {{ neutron_database_max_pool_size }}
 
 # Timeout in seconds before idle sql connections are reaped
 # idle_timeout = 3600
@@ -463,6 +467,7 @@ max_retries = -1
 
 # If set, use this value for pool_timeout with sqlalchemy
 # pool_timeout = 10
+pool_timeout = {{ neutron_database_pool_timeout }}
 
 [service_providers]
 # Specify service providers (drivers) for advanced services like loadbalancer, VPN, Firewall.

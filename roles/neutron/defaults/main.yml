@@ -30,6 +30,11 @@ neutron_retry_until_window: 30
 neutron_backlog: 4096
 neutron_metadata_backlog: 2048
 neutron_max_header_line: 16384
+neutron_thread_pool_size: 64
+neutron_rpc_conn_pool_size: 30
+neutron_database_min_pool_size: 1
+neutron_database_max_pool_size: 10
+neutron_database_pool_timeout: 10
 neutron_use_ssl: false
 neutron_vxlan_udp_port: 4789
 
