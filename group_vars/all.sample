@@ -11,14 +11,18 @@ use_ceph: false
 use_swift: false
 use_cinder_nfs_volume_driver: true
 use_netapp: false
+use_netapp_copyoffload: false
 # select Nova Network or Neutron
 use_nova_network: false
+# use nfs for nova ephemeral volumes
+use_nova_nfs_backend: false
 use_neutron: true
 # havana: select ovs or other Neutron standalone plugin
 # icehouse: select ml2 and its plugins or a standalone Neutron plugin like Cisco Nexus
 use_neutron_ml2: true
 use_neutron_ovs: true
 use_neutron_cisco: false
+use_neutron_l3: true
 use_lbaas: true
 use_heat: true
 use_ceilometer: true
@@ -52,7 +56,7 @@ controller_node_names:
 # The value of the fencing parameter below depends from the type of the fencing agent.
 # Here are few examples for different agent types:
 # fencing: { agent: ipmilan, params: "login=root passwd=calvin ipaddr=172.31.0.23 lanplus='' verbose=''" }
-# fencing: { agent: cisco_ucs, login: pacemaker, passwd: 'SECRET', ipaddr: 10.161.0.50, suborg: org-Controller, port: Profile-CT-1-1, ssl: 1, ssl_insecure: 1 }
+# fencing: { agent: cisco_ucs, params: "login=pacemaker passwd='SECRET' ipaddr=10.161.0.50 suborg=org-Controller port=Profile-CT-1-1 ssl=1 ssl_insecure=1" }
 #
 controller_nodes:
   - name: controller-01
@@ -78,6 +82,7 @@ controller_nodes:
 rabbit_host: 172.16.20.14
 rabbit_port: 5672
 rabbit_node_names: "{{ controller_node_names }}"
+rabbitmq_limit_nofile: 102400
 
 ### Database
 lb_db_vip: 172.16.20.13
@@ -107,6 +112,11 @@ memcached_servers:
 mongodb_servers: "{{ controller_node_names }}"
 
 ### Keystone
+# scalability tuning parameters
+#keystone_rpc_conn_pool_size: 30
+#keystone_rpc_thread_pool_size: 64
+#keystone_database_min_pool_size: 1
+
 keystone_admin_token: "{{ lookup('password', inventory_dir + '/credentials/keystone_admin_token chars=hexdigits') }}"
 
 # passwords for special OpenStack users
@@ -121,8 +131,19 @@ ceilometer_pass: "{{ lookup('password', inventory_dir + '/credentials/ceilometer
 
 
 ### Nova
+# scalability tuning parameters
+#nova_rpc_conn_pool_size: 30
+#nova_rpc_thread_pool_size: 64
+#nova_database_min_pool_size: 1
+#nova_conductor_workers: 4
+#nova_osapi_workers: 4
+
+# hypervisor features
+#nova_instance_live_migration: true
+#nova_network_device_mtu: 9000
+
 # nova network specific
-nova_vlan_start: 74
+#nova_vlan_start: 74
 nova_vlan_interface: "{{ private_if }}"
 
 # specific for neutron based network implementation
@@ -130,20 +151,32 @@ nova_vlan_interface: "{{ private_if }}"
 nova_security_group_api: noop
 #nova_firewall_driver: neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
 nova_firewall_driver: nova.virt.firewall.NoopFirewallDriver
+#nova_ovs_bridge_mappings: "physnet1:br1"
 
 # storage related
 nova_libvirt_images_type: rbd
 nova_secret_uuid: 522e17af-794c-4db9-95ae-884c48f24b13
+
+# Define the following parameters to use a NFS share for Nova ephemeral storage
+#nova_nfs_share_for_instances: "nfs-server.example.com:/nova"
+#nova_nfs_mount_options: "sec=sys,defaults"
 
 # ceilometer related
 nova_notify_on_state_change: vm_and_task_state
 
 
 ### Glance
+
+# define the following parameters to use NetApp as a Glance backend
 #default_store: file
-default_store: rbd
+#glance_show_image_direct_url: true
+#glance_show_multiple_locations: true
+#glance_filesystem_store_metadata_file: /etc/glance/filesystem_store_metadata.json
+# this is necessary to support NetApp copy offload
+#glance_filesystem_store_file_perm: '0644'
 
 # ceph backend settings
+default_store: rbd
 glance_rbd_user: images
 glance_rbd_pool: images
 rbd_secret_uuid: 522e17af-794c-4db9-95ae-884c48f24b13
@@ -154,18 +187,29 @@ glance_notifier_strategy: rabbit
 
 
 ### Cinder
+# definition of multi-volume backends
+cinder_enabled_backends:
+#  - LVM_iSCSI
+#  - Generic_NFS
+  - RBD
+#  - GlusterFS
+#  - NetApp
+
 # ceph backend settings
 cinder_rbd_user: volumes
 cinder_rbd_pool: volumes
 
 # NetApp driver parameters
+# the volume backend name must match the name given in cinder_enabled_backends
+netapp_volume_backend_name: NetApp
 netapp_login: LOGIN
 netapp_password: SECRET
 netapp_vserver: VSERVER_NAME
 netapp_server_hostname: '10.161.0.220'
 netapp_storage_protocol: iscsi
 netapp_transport_type: https
-
+#netapp_thick_provisioned: false
+#cinder_nfs_mount_options: 'sec=sys,defaults'
 
 ### HAproxy parameters
 # pacemaker IPaddr2 resources for HAproxy
@@ -274,8 +318,16 @@ neutron_service_plugins:
   - neutron.services.loadbalancer.plugin.LoadBalancerPlugin
   - neutron.services.metering.metering_plugin.MeteringPlugin
 
+# scalability tuning parameters
+#neutron_thread_pool_size: 64
+#neutron_rpc_conn_pool_size: 30
+#neutron_database_min_pool_size: 1
+#neutron_database_max_pool_size: 10
+#neutron_api_workers: 0
+#neutron_rpc_workers: 0
 neutron_metadata_workers: 20
 neutron_metadata_backlog: 2048
+
 neutron_metadata_proxy_shared_secret: "{{ lookup('password', inventory_dir + '/credentials/neutron_metadata_proxy_shared_secret chars=hexdigits') }}"
 neutron_dhcp_enable_isolated_metadata: true
 neutron_ml2_type_drivers: vxlan,flat
@@ -288,6 +340,11 @@ neutron_ovs_tenant_network_type: vxlan
 neutron_ovs_tunnel_type: vxlan
 neutron_ovs_tunnel_id_ranges: 10:10000
 neutron_ovs_bridge_mappings: "net-ex:br-ex"
+#neutron_ovs_bridges:
+#  - bridge: br1
+#    port: bond1
+#neutron_ovs_veth_mtu: 9000
+
 # disable security groups
 neutron_ovs_firewall_driver: "neutron.agent.firewall.NoopFirewallDriver"
 neutron_agent_tunnel_types: vxlan
