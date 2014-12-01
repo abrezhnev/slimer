@@ -4,3 +4,9 @@
 
 - name: restore selinux context of .ssh files
   command: restorecon -R -v /root/.ssh
+
+- name: reset hostname using the hostnamectl utility
+  shell: hostnamectl set-hostname $(cat /etc/hostname)
+
+- name: reset hostname using the hostname utility
+  shell: hostname $(awk -F= '/HOSTNAME/ { print $2 }' /etc/sysconfig/network)

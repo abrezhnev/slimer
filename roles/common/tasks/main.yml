@@ -39,3 +39,15 @@
 - name: deploy resolv.conf
   copy: src=files/resolv.conf dest=/etc/resolv.conf
   tags: dns
+
+- name: set hostname in /etc/hostname
+  template: src=hostname.j2 dest=/etc/hostname
+  when: ansible_distribution_major_version|int == 7
+  notify: reset hostname using the hostnamectl utility
+  tags: dns
+
+- name: set hostname in /etc/sysconfig/network
+  template: src=sysconfig-network.j2 dest=/etc/sysconfig/network
+  when: ansible_distribution_major_version|int == 6
+  notify: reset hostname using the hostname utility
+  tags: dns
