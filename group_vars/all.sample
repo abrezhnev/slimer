@@ -15,7 +15,9 @@ use_netapp_copyoffload: false
 # select Nova Network or Neutron
 use_nova_network: false
 # use nfs for nova ephemeral volumes
-use_nova_nfs_backend: false
+#use_nova_nfs_backend: true
+# if use_nova_shared_backend is "true", set nova_shared_volume, nova_shared_fs_type and nova_shared_fs_mount_options
+#use_nova_shared_backend: "{{ use_nova_nfs_backend }}"
 use_neutron: true
 # havana: select ovs or other Neutron standalone plugin
 # icehouse: select ml2 and its plugins or a standalone Neutron plugin like Cisco Nexus
@@ -157,9 +159,11 @@ nova_firewall_driver: nova.virt.firewall.NoopFirewallDriver
 nova_libvirt_images_type: rbd
 nova_secret_uuid: 522e17af-794c-4db9-95ae-884c48f24b13
 
-# Define the following parameters to use a NFS share for Nova ephemeral storage
-#nova_nfs_share_for_instances: "nfs-server.example.com:/nova"
-#nova_nfs_mount_options: "sec=sys,defaults"
+# Define the following parameters to use Nova with ephemeral storage on a shared volume
+# For example, to use a NFS share:
+#nova_shared_volume: "nfs-server.example.com:/srv/nova"
+#nova_shared_fs_type: nfs4
+#nova_shared_fs_mount_options: "sec=sys,defaults"
 
 # ceilometer related
 nova_notify_on_state_change: vm_and_task_state

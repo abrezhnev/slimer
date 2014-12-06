@@ -22,7 +22,20 @@
   with_items:
     - rpcbind
     - nfslock
-  when: use_cinder_nfs_driver
+  when: use_cinder_nfs_driver or use_nova_nfs_backend
+  tags: nova
+
+- name: enable nfs-idmap
+  service: name=nfs-idmap enabled=yes state=started
+  when: ( use_cinder_nfs_driver or use_nova_nfs_backend ) and ansible_distribution_major_version|int == 7
+  tags: nova
+
+- name: configure shared storage for nova instances
+  lineinfile: dest=/etc/fstab
+              regexp="/var/lib/nova/instances"
+              line="{{ nova_shared_volume }} /var/lib/nova/instances {{ nova_shared_fs_type }} {{ nova_shared_fs_mount_options }} 0 0"
+              state=present
+  when: use_nova_shared_backend
   tags: nova
 
 - name: enable libvirtd service

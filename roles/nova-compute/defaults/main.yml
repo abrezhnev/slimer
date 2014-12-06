@@ -5,6 +5,8 @@ use_neutron_l3: true
 use_neutron_ml2: true
 use_neutron_ovs: true
 use_neutron_cisco: false
+use_nova_nfs_backend: false
+use_nova_shared_backend: false
 
 nova_osapi_compute_listen_port: 8774
 neutron_l2_population: true
