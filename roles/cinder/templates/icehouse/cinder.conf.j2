@@ -1,4 +1,7 @@
 [DEFAULT]
+{% if cinder_set_host is defined and cinder_set_host %}
+host={{ cinder_host }}
+{% endif %}
 
 #
 # Options defined in oslo.messaging

@@ -78,7 +78,7 @@
   tags: cinder
 
 - name: create pacemaker resources for cinder-volume
-  pcs_resource: command=create name=cinder-volume type=systemd:openstack-cinder-volume clone=yes
+  pcs_resource: command=create name=cinder-volume type=systemd:openstack-cinder-volume
   args:
     operations:
       - action: monitor
@@ -89,7 +89,7 @@
   tags: cinder
 
 - name: create pacemaker resources for cinder-volume
-  pcs_resource: command=create name=cinder-volume type=lsb:openstack-cinder-volume clone=yes
+  pcs_resource: command=create name=cinder-volume type=lsb:openstack-cinder-volume
   args:
     operations:
       - action: monitor
@@ -127,7 +127,7 @@
   tags: cinder
 
 - name: create pacemaker constraint for cinder scheduler and volume
-  shell: pcs constraint list --full | grep id:order-cinder-scheduler-clone-cinder-volume-clone-mandatory || pcs constraint order start cinder-scheduler-clone then cinder-volume-clone
+  shell: pcs constraint list --full | grep id:order-cinder-scheduler-clone-cinder-volume-mandatory || pcs constraint order start cinder-scheduler-clone then cinder-volume
   run_once: true
   tags: cinder
 

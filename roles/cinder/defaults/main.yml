@@ -7,12 +7,13 @@ use_glusterfs: false
 use_netapp: false
 use_netapp_copyoffload: false
 
+cinder_set_host: true
+cinder_host: volume
 cinder_lvmiscsi_volume_backend_name: LVM_iSCSI
 cinder_nfs_volume_backend_name: Generic_NFS
 cinder_ceph_volume_backend_name: RBD
 cinder_glusterfs_volume_backend_name: GlusterFS
 cinder_netapp_volume_backend_name: NetApp
-
 cinder_osapi_volume_listen_port: 8776
 cinder_osapi_volume_workers: 10
 cinder_auth_strategy: keystone
