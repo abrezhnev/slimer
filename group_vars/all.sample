@@ -348,6 +348,9 @@ neutron_ovs_bridge_mappings: "net-ex:br-ex"
 #  - bridge: br1
 #    port: bond1
 #neutron_ovs_veth_mtu: 9000
+# if neutron_external_network_bridge is not set, Neutron will use br-ex by default
+# it is recommended to use empty string with the ml2 plugin
+neutron_external_network_bridge: ""
 
 # disable security groups
 neutron_ovs_firewall_driver: "neutron.agent.firewall.NoopFirewallDriver"
